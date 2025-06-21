@@ -1,0 +1,36 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+* {
+  box-sizing: border-box;
+  font-family: Outfit;
+}
+
+@layer utilities {
+  /* Base styles for nav links */
+  .nav-link {
+    @apply px-4 py-2 font-medium text-gray-700 transition-colors duration-300 rounded-md;
+  }
+
+
+  /* Active nav link base styles */
+  .active-nav-link {
+    @apply bg-[#1F4C56] text-white rounded-full;
+  }
+
+  /* Responsive styles for <p> inside active nav links */
+  @media (max-width: 768px) {
+    .active-nav-link p {
+      @apply text-white bg-[#1F4C56] rounded-full;
+    }
+  }
+}
+
+
+::-webkit-scrollbar {
+    @apply hidden
+}
