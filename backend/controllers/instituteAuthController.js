@@ -61,15 +61,15 @@ export const signup = async (req, res) => {
       code_expires_at: expiresAt,
     };
 
-    const createdInstitute = await createInstitute(instituteData);
+    const institute = await createInstitute(instituteData);
 
-    const token = createSecretToken(createdInstitute.id, "institute");
+    const token = createSecretToken(institute.id, "institute");
 
     // Set cookies
     res.cookie("authToken", token, {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
-    res.cookie("user", JSON.stringify(createdInstitute), {
+    res.cookie("user", JSON.stringify(institute), {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
@@ -83,7 +83,9 @@ export const signup = async (req, res) => {
 
     try {
       await sendVerificationEmail(email, code);
-      res.status(201).json({ message: "Verification code sent" });
+      res
+        .status(201)
+        .json({ message: "Verification code sent", token, user: institute });
     } catch (emailErr) {
       console.error("Email error (user still created):", emailErr);
       res.status(201).json({
@@ -137,6 +139,79 @@ export const verifyCode = async (req, res) => {
       500,
       err.message || "Server error during email verification",
       "VERIFICATION_ERROR"
+    );
+  }
+};
+
+export const login = async (req, res) => {
+  try {
+    const { email, phone, password } = req.body;
+
+    if ((!email && !phone) || (email && phone)) {
+      return handleError(
+        res,
+        400,
+        "Please provide either email or phone number",
+        "INVALID_INPUT"
+      );
+    }
+
+    if (!password) {
+      return handleError(res, 400, "Password is required", "MISSING_PASSWORD");
+    }
+
+    let institute;
+
+    if (email) {
+      institute = await findInstituteByEmail(email);
+    } else if (phone) {
+      institute = await findInstituteByPhone(phone);
+    }
+
+    if (!institute) {
+      return handleError(
+        res,
+        404,
+        "Institute not found",
+        "INSTITUTE_NOT_FOUND"
+      );
+    }
+
+    const isMatch = await bcrypt.compare(password, institute.password);
+
+    if (!isMatch) {
+      return handleError(
+        res,
+        401,
+        "Invalid credentials",
+        "INVALID_CREDENTIALS"
+      );
+    }
+
+    const { password: _, code, ...safeInstitute } = institute;
+    const token = createSecretToken(institute.id, "institute");
+
+    // Set cookies
+    res.cookie("authToken", token, {
+      maxAge: 7 * 24 * 60 * 60 * 1000,  // 7 days
+    });
+
+    res.cookie("user", JSON.stringify(safeInstitute), {
+      maxAge: 7 * 24 * 60 * 60 * 1000,  // 7 days
+    });
+
+    res.status(201).json({
+      message: "Login successful",
+      token,
+      user: safeInstitute,
+    });
+  } catch (err) {
+    console.error("Login error:", err);
+    handleError(
+      res, 
+      500, 
+      err.message || "Internal server error", 
+      "LOGIN_ERROR"
     );
   }
 };
@@ -197,88 +272,6 @@ export const updateProfileSection = async (req, res) => {
   }
 };
 
-export const login = async (req, res) => {
-  try {
-    const { email, phone, password } = req.body;
-
-    if ((!email && !phone) || (email && phone)) {
-      return handleError(
-        res,
-        400,
-        "Please provide either email or phone number",
-        "INVALID_INPUT"
-      );
-    }
-
-    if (!password) {
-      return handleError(res, 400, "Password is required", "MISSING_PASSWORD");
-    }
-
-    let institute;
-
-    if (email) {
-      institute = await findInstituteByEmail(email);
-    } else if (phone) {
-      institute = await findInstituteByPhone(phone);
-    }
-
-    if (!institute) {
-      return handleError(
-        res,
-        404,
-        "Institute not found",
-        "INSTITUTE_NOT_FOUND"
-      );
-    }
-
-    if (!(await bcrypt.compare(password, institute.password))) {
-      return handleError(
-        res,
-        401,
-        "Invalid credentials",
-        "INVALID_CREDENTIALS"
-      );
-    }
-
-    const { password: _, code, ...safeInstitute } = institute;
-    const token = createSecretToken(institute.id, "institute");
-
-    // Set cookies
-    res.cookie("authToken", token, {
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    res.cookie("user", JSON.stringify(safeInstitute), {
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    res.status(200).json({
-      message: "Login successful",
-      token,
-      institute: safeInstitute,
-    });
-  } catch (err) {
-    console.error("Login error:", err);
-    handleError(res, 500, "Internal server error", "LOGIN_ERROR");
-  }
-};
-
-export const logout = async (req, res) => {
-  try {
-    res.clearCookie("authToken");
-    res.clearCookie("user");
-    res.status(200).json({ message: "Logout successful" });
-  } catch (err) {
-    console.error("Logout error", err);
-    handleError(
-      res,
-      500,
-      err.message || "Server error during logout.",
-      "LOGOUT_ERROR"
-    );
-  }
-};
-
 export const getInstituteProfile = async (req, res) => {
   try {
     const institute = req.institute;
@@ -297,5 +290,21 @@ export const getInstituteProfile = async (req, res) => {
   } catch (err) {
     console.error("Get profile error:", err);
     handleError(res, 500, "Internal server error", "PROFILE_ERROR");
+  }
+};
+
+export const logout = async (req, res) => {
+  try {
+    res.clearCookie("authToken");
+    res.clearCookie("user");
+    res.status(200).json({ message: "Logout successful" });
+  } catch (err) {
+    console.error("Logout error", err);
+    handleError(
+      res,
+      500,
+      err.message || "Server error during logout.",
+      "LOGOUT_ERROR"
+    );
   }
 };

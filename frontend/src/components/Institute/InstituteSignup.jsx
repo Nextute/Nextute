@@ -7,10 +7,11 @@ import { AppContext } from "../../context/AppContext";
 import PhoneNumberValidator from "../../context/PhoneNumberValidator.jsx";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 // Sanitize input to prevent XSS
 const sanitizeInput = (input) => {
-  return input.replace(/[<>]/g, ""); 
+  return input.replace(/[<>]/g, "");
 };
 
 const InstituteSignup = () => {
@@ -31,9 +32,14 @@ const InstituteSignup = () => {
     password: "",
   });
 
+  const {
+    VITE_BACKEND_BASE_URL,
+    setShowEmailVerification,
+    setAuthToken,
+    setUser,
+  } = useContext(AppContext);
+
   const navigate = useNavigate();
-  const { VITE_BACKEND_BASE_URL, setShowEmailVerification } =
-    useContext(AppContext);
 
   // Real-time validation
   const validateField = (name, value) => {
@@ -126,35 +132,33 @@ const InstituteSignup = () => {
         password,
       };
 
-      const response = await fetch(
+      const response = await axios.post(
         `${VITE_BACKEND_BASE_URL}/api/institutes/signup`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include", // ✅ send cookies
-          body: JSON.stringify(formData),
-        }
+        formData,
+        { withCredentials: true }
       );
 
-      const data = await response.json();
+      const { data } = response;
 
-      if (response.ok) {
-        const authToken = Cookies.get("authToken");
-        const user = Cookies.get("user");
+      // Set cookies
+      Cookies.set("authToken", data.token, { expires: 7 });
+      Cookies.set("user", JSON.stringify(data.user), { expires: 7 });
+      Cookies.set("signupEmail", email, { expires: 1 });
+      Cookies.set("userType", "institute", { expires: 1 });
 
-        console.log("✅ Token from cookies:", authToken);
-        console.log("✅ User from cookies:", user && JSON.parse(user));
+      setAuthToken(data.token);
+      setUser(data.user);
 
-        toast.success("Registration successful! Please verify your email.");
-        setShowEmailVerification(true);
-        navigate("/verify"); // Redirect to email verification page
-      } else {
-        toast.error(data.message || "Registration failed.");
-      }
+      toast.success("Registration successful! Please verify your email.");
+      setShowEmailVerification(true);
+      navigate("/verify");
     } catch (error) {
-      toast.error("Something went wrong. Please try again later.");
+      console.error("Signup error:", error);
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Something went wrong."
+      );
     } finally {
       setLoading(false);
     }

@@ -3,10 +3,11 @@ import { assets } from "../assets/assets";
 import { useContext, useEffect, useState } from "react";
 import { AppContext } from "../context/AppContext";
 import toast from "react-hot-toast";
-
+import axios from "axios";
 
 const Navbar = () => {
   const {
+    VITE_BACKEND_BASE_URL,
     isAuthenticated,
     setShowLogin,
     setShowSignup,
@@ -14,6 +15,9 @@ const Navbar = () => {
     authToken,
     logout,
   } = useContext(AppContext);
+
+  const studentDashboardLink = "/student/dashboard";
+  const instituteDashboardLink = "/institute/dashboard";
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -24,28 +28,29 @@ const Navbar = () => {
   useEffect(() => {
     // Update isAuthenticated based on authToken and user
     isAuthenticated;
-    console.log("navbar", isAuthenticated);
   }, [authToken, user]);
 
   const handleLogout = async () => {
     try {
       // Call backend logout endpoint
-      const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_BASE_URL}/api/students/logout`,
-        {
-          method: "POST",
-          credentials: "include",
-        }
+      const response = await axios.post(
+        `${VITE_BACKEND_BASE_URL}${
+          user.student_id ? "/api/students/logout" : "/api/institutes/logout"
+        }`,
+        { withCredentials: true }
       );
-      if (response.ok) {
-        logout(); // Clear cookies and context state
+
+      if (response.status === 200) {
+        logout();
         toast.success("Logged out successfully");
       } else {
-        throw new Error("Logout failed");
+        throw new Error(response.data.message || "Logout failed");
       }
     } catch (error) {
       console.error("Logout error:", error);
-      toast.error("Failed to log out");
+      toast.error(
+        error.response?.data?.message || error.message || "Failed to log out"
+      );
     }
   };
 
@@ -114,7 +119,11 @@ const Navbar = () => {
             {isDropdownOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
                 <NavLink
-                  to="/student/dashboard"
+                  to={
+                    user.student_id
+                      ? studentDashboardLink
+                      : instituteDashboardLink
+                  }
                   className={({ isActive }) =>
                     `block px-4 py-2 text-gray-700 hover:bg-[#2D7B67] hover:text-white transition duration-300 ${
                       isActive ? "bg-[#1F4C56] text-white" : ""

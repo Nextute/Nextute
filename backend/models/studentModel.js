@@ -25,7 +25,9 @@ const createStudent = async (student) => {
 };
 
 const findStudentByEmail = async (email) => {
-  const { rows } = await pool.query("SELECT * FROM students WHERE email = $1", [email]);
+  const { rows } = await pool.query("SELECT * FROM students WHERE email = $1", 
+    [email])
+    ;
   return rows[0];
 };
 

@@ -7,7 +7,8 @@ import { Eye, EyeOff } from "lucide-react";
 import { AppContext } from "../../context/AppContext";
 import { useNavigate } from "react-router-dom";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
-import Cookies from "js-cookie"; // ✅ for storing userType
+import Cookies from "js-cookie";
+import axios from "axios";
 
 const sanitizeInput = (input) => input.replace(/[<>]/g, "");
 
@@ -81,12 +82,13 @@ const StudentLogin = () => {
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
+
     const sanitizedLoginInput = sanitizeInput(loginInput.trim());
     const sanitizedPassword = sanitizeInput(password.trim());
 
     const isEmail = sanitizedLoginInput.includes("@");
 
-    // Validations
+    // Check for empty fields
     if (!sanitizedLoginInput || !sanitizedPassword) {
       setErrors({
         loginInput: sanitizedLoginInput
@@ -97,6 +99,18 @@ const StudentLogin = () => {
       return toast.error("Please fill in all fields.");
     }
 
+    // Validate input and determine type
+    const validation = validateInput(sanitizedLoginInput);
+    if (!validation.isValid) {
+      setErrors((prev) => ({
+        ...prev,
+        loginInput: validation.error,
+      }));
+      toast.error(validation.error);
+      return;
+    }
+
+    // Password validation
     if (sanitizedPassword.length < 6) {
       setErrors((prev) => ({
         ...prev,
@@ -111,37 +125,28 @@ const StudentLogin = () => {
 
     setLoading(true);
     try {
-      const response = await fetch(
+      const response = await axios.post(
         `${VITE_BACKEND_BASE_URL}/api/students/auth/login`,
+        payload,
         {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include", // ✅ send/receive cookies
-          body: JSON.stringify(payload),
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true,
         }
       );
 
-      const data = await response.json();
+      const data = response.data;
 
-      if (!response.ok) {
-        console.error("Login error response:", data);
-        return toast.error(
-          data.message || "Login failed. Please check credentials."
-        );
+      if (!data.token || !data.user) {
+        throw new Error("Invalid response: Missing token or user data.");
       }
 
-      // ✅ Backend sets JWT in secure HTTP-only cookie
-      // ✅ Store tokens in cookies
       Cookies.set("authToken", data.token, { expires: 7, secure: true });
       Cookies.set("user", JSON.stringify(data.user), {
         expires: 7,
         secure: true,
       });
-      Cookies.set("userType", "student");
+      Cookies.set("userType", "student", { expires: 7, secure: true });
 
-      // ✅ Update AppContext state
       setAuthToken(data.token);
       setUser(data.user);
 
@@ -149,7 +154,11 @@ const StudentLogin = () => {
       navigate("/");
     } catch (error) {
       console.error("Login failed:", error);
-      toast.error("Something went wrong. Please try again.");
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Login failed. Please check credentials.";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

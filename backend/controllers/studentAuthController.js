@@ -196,9 +196,6 @@ export const login = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
-  //   console.log("backend", token);
-  //  console.log("backend", safeStudent);
-
     res.status(201).json({
       message: "Login successful",
       token,
@@ -211,22 +208,6 @@ export const login = async (req, res) => {
       500,
       err.message || "Internal server error",
       "LOGIN_ERROR"
-    );
-  }
-};
-
-export const logout = async (req, res) => {
-  try {
-    res.clearCookie("authToken");
-    res.clearCookie("user");
-    res.status(200).json({ message: "Logout successful" });
-  } catch (err) {
-    console.error("Logout error", err);
-    handleError(
-      res,
-      500,
-      err.message || "Server error during logout.",
-      "LOGOUT_ERROR"
     );
   }
 };
@@ -252,6 +233,22 @@ export const getStudentProfile = async (req, res) => {
       500,
       err.message || "Failed to fetch profile",
       "PROFILE_ERROR"
+    );
+  }
+};
+
+export const logout = async (req, res) => {
+  try {
+    res.clearCookie("authToken");
+    res.clearCookie("user");
+    res.status(200).json({ message: "Logout successful" });
+  } catch (err) {
+    console.error("Logout error", err);
+    handleError(
+      res,
+      500,
+      err.message || "Server error during logout.",
+      "LOGOUT_ERROR"
     );
   }
 };

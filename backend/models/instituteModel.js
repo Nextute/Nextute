@@ -67,7 +67,7 @@ const findInstituteByEmail = async (email) => {
 
 const findInstituteByPhone = async (phone) => {
   const { rows } = await pool.query(
-    "SELECT * FROM institutes WHERE contact->>'phone' = $1",
+    "SELECT * FROM institutes WHERE contact = $1",
     [phone]
   );
   return rows[0];
