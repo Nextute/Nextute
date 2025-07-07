@@ -1,16 +1,20 @@
 import jwt from "jsonwebtoken";
-import pool from "../db/index.js";
+import prisma from "../db/index.js";
 import { promisify } from "util";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const instituteAuth = async (req, res, next) => {
   try {
     const token =
-      req.cookies.token || req.headers.authorization?.split(" ")[1];
+      req.cookies.authToken || req.headers.authorization?.split(" ")[1];
 
     if (!token) {
       return res.status(401).json({
         status: false,
         message: "Institute authentication required",
+        error: "UNAUTHORIZED",
       });
     }
 
@@ -20,28 +24,34 @@ const instituteAuth = async (req, res, next) => {
       return res.status(403).json({
         status: false,
         message: "Invalid token type for institute route",
+        error: "FORBIDDEN",
       });
     }
 
-    const { rows } = await pool.query(
-      "SELECT * FROM institutes WHERE id = $1",
-      [decoded.id]
-    );
+    const institute = await prisma.institute.findUnique({
+      where: { id: decoded.id },
+    });
 
-    if (!rows.length) {
+    if (!institute) {
       return res.status(404).json({
         status: false,
         message: "Institute not found",
+        error: "NOT_FOUND",
       });
     }
 
-    req.institute = rows[0];
+    req.institute = institute;
     next();
   } catch (error) {
-    return res.status(500).json({
+    console.error("Auth Middleware Error:", {
+      message: error.message,
+      stack: error.stack,
+    });
+    return res.status(401).json({
       status: false,
       message: "Institute authentication failed",
-      error: error.message,
+      error:
+        process.env.NODE_ENV === "development" ? error.message : "UNAUTHORIZED",
     });
   }
 };

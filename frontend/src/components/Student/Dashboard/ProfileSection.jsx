@@ -3,12 +3,15 @@ import { assets } from "../../../assets/assets";
 import Loader from "./Loader";
 
 const ProfileSection = ({ studentData }) => {
+  // Safely access data or use empty object to avoid errors
+  const data = studentData?.data || {};
+
   const [profile, setProfile] = useState({
-    name: studentData.data.name || "Student Name",
-    phoneNumber: studentData.data.phoneNumber || "",
-    address: studentData.data.address || "",
-    guardianName: studentData.data.guardianName || "",
-    guardianPhoneNumber: studentData.data.guardianPhoneNumber || "",
+    name: data.name || "Student Name",
+    phoneNumber: data.phoneNumber || "",
+    address: data.address || "",
+    guardianName: data.guardianName || "",
+    guardianPhoneNumber: data.guardianPhoneNumber || "",
     picture: assets.profilePlaceholder,
     completion: 0,
   });
@@ -16,18 +19,22 @@ const ProfileSection = ({ studentData }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (!studentData || !studentData.data) {
+      return; // Wait until data is available
+    }
+
     const calculateCompletion = () => {
       const fields = [
-        studentData.data.name,
-        studentData.data.gender,
-        studentData.data.dob,
-        studentData.data.studentId,
-        studentData.data.phoneNumber,
-        studentData.data.emailAddress,
-        studentData.data.address,
-        studentData.data.guardianName,
-        studentData.data.guardianPhoneNumber,
-        studentData.data.profileImage,
+        data.name,
+        data.gender,
+        data.dob,
+        data.studentId,
+        data.phoneNumber,
+        data.emailAddress,
+        data.address,
+        data.guardianName,
+        data.guardianPhoneNumber,
+        data.profileImage,
       ];
       const filledFields = fields.filter(
         (field) => field && field !== ""
@@ -39,17 +46,23 @@ const ProfileSection = ({ studentData }) => {
     setProfile((prev) => ({
       ...prev,
       completion: calculateCompletion(),
-      picture: studentData.data.profileImage || assets.upload_area,
-      name: studentData.data.name || "Student Name",
-      phoneNumber: studentData.data.phoneNumber || "",
-      address: studentData.data.address || "",
-      guardianName: studentData.data.guardianName || "",
-      guardianPhoneNumber: studentData.data.guardianPhoneNumber || "",
+      picture: data.profileImage || assets.upload_area,
+      name: data.name || "Student Name",
+      phoneNumber: data.phoneNumber || "",
+      address: data.address || "",
+      guardianName: data.guardianName || "",
+      guardianPhoneNumber: data.guardianPhoneNumber || "",
     }));
+
     setTimeout(() => {
       setIsLoading(false);
     }, 1000);
   }, [studentData]);
+
+  // Optional: show loading state if data not ready yet
+  if (!studentData || !studentData.data) {
+    return <div>Loading profile...</div>;
+  }
 
   const handlePictureUpload = (e) => {
     const file = e.target.files[0];

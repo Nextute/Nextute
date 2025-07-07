@@ -6,8 +6,12 @@ const ContactInfo = ({ studentData }) => {
     phone_number: false,
     guardianPhone: false,
   });
-  const [phoneNumber, setPhoneNumber] = useState(studentData?.data?.phone_number || "");
-  const [guardianPhone, setGuardianPhone] = useState(studentData?.data?.guardianPhone || "");
+  const [phoneNumber, setPhoneNumber] = useState(
+    studentData?.data?.phone_number || ""
+  );
+  const [guardianPhone, setGuardianPhone] = useState(
+    studentData?.data?.guardianPhone || ""
+  );
   const phoneInputRef = useRef(null);
   const guardianPhoneInputRef = useRef(null);
 
@@ -67,25 +71,23 @@ const ContactInfo = ({ studentData }) => {
   ];
 
   return (
-    <div className="w-full h-full bg-white">
-      <div className="w-full min-h-[34.4rem] mx-auto mt-4 bg-[#E6EDE2] border border-[#000] rounded-3xl shadow-sm">
+    <div className="w-full h-full  bg-white  sm:px-6 py-4">
+      <div className="w-full h-[34.5rem] mx-auto bg-[#E6EDE2] border border-[#000] rounded-3xl shadow-sm px-4 sm:px-6 py-6">
         {/* Header */}
-        <div className="flex flex-col items-center justify-center gap-2 py-3 border-b-2 mx-6 border-dashed border-black">
+        <div className="flex flex-col items-center justify-center gap-2 pb-4 border-b-2 border-dashed border-black">
           <img
             src={assets.dashboard_contact}
             alt="Dashboard Contact Icon"
             className="w-6 h-6"
           />
-          <p className="text-xl sm:text-lg font-semibold text-black">
-            Contact Info
-          </p>
+          <p className="text-xl font-semibold text-black">Contact Info</p>
         </div>
 
         {/* Contact Fields */}
         {contactFields.map((field, index) => (
-          <div className="mt-4 px-4 sm:px-6" key={index}>
+          <div className="mt-6" key={index}>
             {/* Label */}
-            <div className="flex items-center gap-2 py-1">
+            <div className="flex items-center gap-2 pb-1">
               <img
                 src={field.icon}
                 alt={`${field.label} Icon`}
@@ -105,30 +107,24 @@ const ContactInfo = ({ studentData }) => {
                 onChange={field.onChange}
                 disabled={!field.editable || !editing[field.fieldKey]}
                 ref={field.ref}
-                className={`flex-1 px-2 py-1 text-base sm:text-lg text-[#263238] font-medium focus:outline-none 
-                  ${
-                    field.editable && editing[field.fieldKey]
-                      ? 'bg-white border border-gray-400 rounded-md'
-                      : 'bg-transparent disabled:cursor-not-allowed'
-                  }`}
+                className={`flex-1 px-2 py-1 text-sm sm:text-base text-[#263238] font-medium focus:outline-none ${
+                  field.editable && editing[field.fieldKey]
+                    ? "bg-white border border-gray-400 rounded-md"
+                    : "bg-transparent disabled:cursor-not-allowed"
+                }`}
               />
-              {field.editable ? (
-                editing[field.fieldKey] ? (
-                  <button
-                    onClick={() => handleSave(field.fieldKey)}
-                    className="text-[#263238] font-medium text-base underline underline-offset-auto decoration-solid decoration-auto [text-underline-position:from-font]"
-                  >
-                    Save
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleEdit(field.fieldKey)}
-                    className="text-[#263238] font-medium text-base underline underline-offset-auto decoration-solid decoration-auto [text-underline-position:from-font]"
-                  >
-                    Edit
-                  </button>
-                )
-              ) : null}
+              {field.editable && (
+                <button
+                  onClick={() =>
+                    editing[field.fieldKey]
+                      ? handleSave(field.fieldKey)
+                      : handleEdit(field.fieldKey)
+                  }
+                  className="text-[#263238] font-medium text-sm sm:text-base underline"
+                >
+                  {editing[field.fieldKey] ? "Save" : "Edit"}
+                </button>
+              )}
             </div>
           </div>
         ))}

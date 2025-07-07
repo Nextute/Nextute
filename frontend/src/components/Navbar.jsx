@@ -1,72 +1,42 @@
 import { NavLink } from "react-router-dom";
 import { assets } from "../assets/assets";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
 import { AppContext } from "../context/AppContext";
 import toast from "react-hot-toast";
-import axios from "axios";
 
 const Navbar = () => {
-  const {
-    VITE_BACKEND_BASE_URL,
-    isAuthenticated,
-    setShowLogin,
-    setShowSignup,
-    user,
-    authToken,
-    logout,
-  } = useContext(AppContext);
-
-  const studentDashboardLink = "/student/dashboard";
-  const instituteDashboardLink = "/institute/dashboard";
+  const { isAuthenticated, setShowLogin, setShowSignup, user, userType, logout } =
+    useContext(AppContext);
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
   const toggleDropdown = () => {
     setIsDropdownOpen(!isDropdownOpen);
   };
 
-  useEffect(() => {
-    // Update isAuthenticated based on authToken and user
-    isAuthenticated;
-  }, [authToken, user]);
-
   const handleLogout = async () => {
     try {
-      // Call backend logout endpoint
-      const response = await axios.post(
-        `${VITE_BACKEND_BASE_URL}${
-          user.student_id ? "/api/students/logout" : "/api/institutes/logout"
-        }`,
-        { withCredentials: true }
-      );
-
-      if (response.status === 200) {
-        logout();
-        toast.success("Logged out successfully");
-      } else {
-        throw new Error(response.data.message || "Logout failed");
-      }
+      await logout();
+      toast.success("Logged out successfully");
     } catch (error) {
       console.error("Logout error:", error);
-      toast.error(
-        error.response?.data?.message || error.message || "Failed to log out"
-      );
+      toast.error("Failed to log out");
     }
   };
 
+
   return (
-    <div className="w-full h-32 mx-auto mb-4 flex items-center justify-between py-4">
-      {/* Logo */}
+    <div className="w-full max-w-[94rem] h-32 mx-auto flex items-center justify-between py-4 px-4 sm:px-8 relative">
       <NavLink to="/">
         <img
           src={assets.logo}
           alt="Nextute Logo"
-          className="w-28 sm:w-32 lg:w-40 ml-14"
+          className="w-28 sm:w-32 lg:w-40"
         />
       </NavLink>
 
-      {/* RIGHT SECTION -> NAV LINKS */}
-      <nav className="flex items-center gap-6 mr-16">
+      <nav className="hidden md:flex items-center gap-6">
         <NavLink
           to="/"
           className={({ isActive }) =>
@@ -93,12 +63,12 @@ const Navbar = () => {
         >
           <p>Services</p>
         </NavLink>
+
         {isAuthenticated ? (
           <div className="relative">
-            {/* Profile Photo or User Icon */}
             <button
               onClick={toggleDropdown}
-              className="flex items-center justify-center w-11 h-11 rounded-full border border-gray-500 hover:bg-gray-100 transition duration-300"
+              className="flex items-center justify-center w-11 h-11 rounded-full border border-gray-500 hover:bg-gray-100 transition"
             >
               {user?.profilePhoto ? (
                 <img
@@ -115,37 +85,24 @@ const Navbar = () => {
               )}
             </button>
 
-            {/* Dropdown Menu */}
             {isDropdownOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
                 <NavLink
-                  to={
-                    user.student_id
-                      ? studentDashboardLink
-                      : instituteDashboardLink
-                  }
-                  className={({ isActive }) =>
-                    `block px-4 py-2 text-gray-700 hover:bg-[#2D7B67] hover:text-white transition duration-300 ${
-                      isActive ? "bg-[#1F4C56] text-white" : ""
-                    }`
-                  }
+                  to={`/${userType}/dashboard`}
+                  className="block px-4 py-2 text-gray-700 hover:bg-[#2D7B67] hover:text-white transition"
                   onClick={() => setIsDropdownOpen(false)}
                 >
                   Dashboard
                 </NavLink>
                 <NavLink
-                  to="/student/settings"
-                  className={({ isActive }) =>
-                    `block px-4 py-2 text-gray-700 hover:bg-[#2D7B67] hover:text-white transition duration-300 ${
-                      isActive ? "bg-[#1F4C56] text-white" : ""
-                    }`
-                  }
+                  to={`/${userType}/settings`}
+                  className="block px-4 py-2 text-gray-700 hover:bg-[#2D7B67] hover:text-white transition"
                   onClick={() => setIsDropdownOpen(false)}
                 >
                   Settings
                 </NavLink>
                 <button
-                  className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-[#2D7B67] hover:text-white transition duration-300"
+                  className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-[#2D7B67] hover:text-white transition"
                   onClick={() => {
                     handleLogout();
                     setIsDropdownOpen(false);
@@ -159,7 +116,7 @@ const Navbar = () => {
         ) : (
           <>
             <button
-              className="text-gray-700 px-7 py-2 cursor-pointer border border-gray-500 rounded-full hover:bg-gray-50 transition duration-300"
+              className="text-gray-700 px-6 py-2 border border-gray-500 rounded-full hover:bg-gray-50 transition"
               onClick={() => {
                 setShowLogin(true);
                 setShowSignup(false);
@@ -168,7 +125,7 @@ const Navbar = () => {
               Login
             </button>
             <button
-              className="bg-[#2D7B67] text-white px-7 py-2 cursor-pointer border border-gray-500 rounded-full hover:bg-[#1F4C56] transition duration-300"
+              className="bg-[#2D7B67] text-white px-6 py-2 rounded-full hover:bg-[#1F4C56] transition"
               onClick={() => {
                 setShowSignup(true);
                 setShowLogin(false);
@@ -179,6 +136,92 @@ const Navbar = () => {
           </>
         )}
       </nav>
+
+      {/* Mobile Hamburger Icon */}
+      <img
+        src={assets.menu_icon}
+        alt="menu-icon"
+        onClick={() => setShowMenu(true)}
+        className="w-6 md:hidden cursor-pointer"
+      />
+
+      {/* Mobile Menu */}
+      <div
+        className={`fixed inset-0 z-30 bg-white transition-transform duration-300 md:hidden ${
+          showMenu ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        <div className="flex items-center justify-between px-5 py-6 border-b">
+          <img src={assets.logo} alt="logo" className="w-28" />
+          <img
+            src={assets.cross_icon}
+            alt="close"
+            onClick={() => setShowMenu(false)}
+            className="w-6 h-6 cursor-pointer"
+          />
+        </div>
+
+        <div className="overflow-y-auto h-[calc(100%-80px)] px-6 py-4 flex flex-col gap-4 text-base font-medium">
+          <NavLink onClick={() => setShowMenu(false)} to="/">
+            <p className="py-2">Home</p>
+          </NavLink>
+          <NavLink onClick={() => setShowMenu(false)} to="/about">
+            <p className="py-2">About Us</p>
+          </NavLink>
+          <NavLink onClick={() => setShowMenu(false)} to="/services">
+            <p className="py-2">Services</p>
+          </NavLink>
+
+          {isAuthenticated ? (
+            <>
+              <NavLink
+                onClick={() => setShowMenu(false)}
+                to={`/${userType}/dashboard`}
+              >
+                <p className="py-2">Dashboard</p>
+              </NavLink>
+              <NavLink
+                onClick={() => setShowMenu(false)}
+                to={`/${userType}/settings`}
+              >
+                <p className="py-2">Settings</p>
+              </NavLink>
+              <button
+                className="text-left py-2 text-gray-700"
+                onClick={() => {
+                  handleLogout();
+                  setShowMenu(false);
+                }}
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className="text-gray-700 py-2 border border-gray-500 rounded-full w-full text-center"
+                onClick={() => {
+                  setShowLogin(true);
+                  setShowSignup(false);
+                  setShowMenu(false);
+                }}
+              >
+                Login
+              </button>
+              <button
+                className="bg-[#2D7B67] text-white py-2 rounded-full w-full text-center"
+                onClick={() => {
+                  setShowSignup(true);
+                  setShowLogin(false);
+                  setShowMenu(false);
+                }}
+              >
+                Sign Up
+              </button>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

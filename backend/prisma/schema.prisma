@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../db/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Institute {
+  id                     String    @id @default(uuid()) @db.Uuid
+  institute_id           String    @unique @db.VarChar(10)
+  institute_name         String    @db.VarChar(255)
+  email                  String    @unique @db.VarChar(255)
+  password               String    @db.VarChar(255)
+  contact                String?   @db.VarChar(50)
+  basic_info             Json?
+  contact_details        Json?
+  courses                Json?
+  faculty_details        Json?
+  student_achievements   Json?
+  institute_achievements Json?
+  facilities             Json?
+  social_media           Json?
+  media_gallery          Json?
+  is_verified            Boolean   @default(false)
+  code                   String?   @db.VarChar(10)
+  code_expires_at        DateTime?
+  created_at             DateTime  @default(now())
+  updated_at             DateTime  @updatedAt
+}
+
+model Student {
+  id              String    @id @default(uuid()) @db.Uuid
+  student_id      String    @unique @db.VarChar(10)
+  name            String    @db.Text
+  email           String    @unique @db.Text
+  password        String    @db.Text
+  gender          String    @db.Text
+  phone_number    String    @unique @map("phone_number") @db.Text
+  address         String?   @db.Text
+  course          String?   @db.Text
+  date_of_birth   DateTime  @map("date_of_birth")
+  is_verified     Boolean   @default(false)
+  code            String?   @db.Text
+  code_expires_at DateTime?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @default(now()) @updatedAt
+}

@@ -13,6 +13,7 @@ import google from "./google.svg";
 import instagram from "./instagram.svg";
 import linkedin from "./linkedin.svg";
 import SearchBanner from "./SearchBanner.png";
+import SearchBanner2 from "./SearchBanner2.png";
 import verify from "./verify.svg";
 import test2 from "./test2.jpg";
 import test3 from "./test3.jpg";
@@ -48,6 +49,10 @@ import student_id from "./student_id.svg";
 import loader from "./loader.svg";
 import dashboard_contact from "./dashboard_contact.svg"
 import upload_area from "./upload_area.svg";
+import aboutus from "./aboutus.jpg";
+import Revolution from "./Revolution.jpeg";
+import ReviewBanner from "./ReviewBanner.svg";
+import FAQBanner from "./FAQBanner.svg"
 
 export const assets = {
     logo,
@@ -58,6 +63,7 @@ export const assets = {
     instagram,
     linkedin,
     SearchBanner,
+    SearchBanner2,
     verify,
     test2,
     test3,
@@ -93,6 +99,10 @@ export const assets = {
     loader,
     dashboard_contact,
     upload_area,
+    aboutus,
+    Revolution,
+    ReviewBanner,
+    FAQBanner,
 };
 
 export const cities = [

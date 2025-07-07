@@ -7,8 +7,6 @@ import { Eye, EyeOff } from "lucide-react";
 import { AppContext } from "../../context/AppContext";
 import { useNavigate } from "react-router-dom";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
-import Cookies from "js-cookie";
-import axios from "axios";
 
 const sanitizeInput = (input) => input.replace(/[<>]/g, "");
 
@@ -57,8 +55,13 @@ const StudentLogin = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState({ loginInput: "", password: "" });
 
-  const { VITE_BACKEND_BASE_URL, setAuthToken, setUser } =
-    useContext(AppContext);
+  const {
+    VITE_BACKEND_BASE_URL,
+    setUser,
+    setUserType,
+    setShouldFetchUser,
+    setShowLogin,
+  } = useContext(AppContext);
   const navigate = useNavigate();
 
   const handleInputChange = (e) => {
@@ -82,13 +85,12 @@ const StudentLogin = () => {
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
-
     const sanitizedLoginInput = sanitizeInput(loginInput.trim());
     const sanitizedPassword = sanitizeInput(password.trim());
 
     const isEmail = sanitizedLoginInput.includes("@");
 
-    // Check for empty fields
+    // Validations
     if (!sanitizedLoginInput || !sanitizedPassword) {
       setErrors({
         loginInput: sanitizedLoginInput
@@ -99,18 +101,6 @@ const StudentLogin = () => {
       return toast.error("Please fill in all fields.");
     }
 
-    // Validate input and determine type
-    const validation = validateInput(sanitizedLoginInput);
-    if (!validation.isValid) {
-      setErrors((prev) => ({
-        ...prev,
-        loginInput: validation.error,
-      }));
-      toast.error(validation.error);
-      return;
-    }
-
-    // Password validation
     if (sanitizedPassword.length < 6) {
       setErrors((prev) => ({
         ...prev,
@@ -125,40 +115,37 @@ const StudentLogin = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post(
+      const response = await fetch(
         `${VITE_BACKEND_BASE_URL}/api/students/auth/login`,
-        payload,
         {
-          headers: { "Content-Type": "application/json" },
-          withCredentials: true,
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include", // important to send cookies
+          body: JSON.stringify(payload),
         }
       );
 
-      const data = response.data;
+      const data = await response.json();
 
-      if (!data.token || !data.user) {
-        throw new Error("Invalid response: Missing token or user data.");
+      if (!response.ok) {
+        console.error("Login error response:", data);
+        return toast.error(
+          data.message || "Login failed. Please check credentials."
+        );
       }
 
-      Cookies.set("authToken", data.token, { expires: 7, secure: true });
-      Cookies.set("user", JSON.stringify(data.user), {
-        expires: 7,
-        secure: true,
-      });
-      Cookies.set("userType", "student", { expires: 7, secure: true });
-
-      setAuthToken(data.token);
-      setUser(data.user);
 
       toast.success("Login successful!");
+      setUser(data.user);
+      setUserType(data.user?.type || "student");
+      setShouldFetchUser(true);
+      setShowLogin(false);
       navigate("/");
     } catch (error) {
       console.error("Login failed:", error);
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        "Login failed. Please check credentials.";
-      toast.error(errorMessage);
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }

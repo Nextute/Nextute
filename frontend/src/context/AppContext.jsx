@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect } from "react";
-import Cookies from "js-cookie";
+import axios from "axios";
 
 export const AppContext = createContext();
 
@@ -9,37 +9,94 @@ const AppContextProvider = ({ children }) => {
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const [showEmailVerification, setShowEmailVerification] = useState(false);
-  const [authToken, setAuthToken] = useState(null);
+
   const [user, setUser] = useState(null);
-   const [loading, setLoading] = useState(true);
+  const [userType, setUserType] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [shouldFetchUser, setShouldFetchUser] = useState(false);
 
-  // Restore auth state from cookies on app load
-  useEffect(() => {
+  const fetchUser = async () => {
+    setLoading(true); // ✅ loading start here
+
     try {
-      const token = Cookies.get("authToken");
-      const userData = Cookies.get("user");
-
-      if (token) setAuthToken(token);
-      if (userData) setUser(JSON.parse(userData));
-    } catch (error) {
-      console.error("Error loading auth data from cookies:", error);
-      // Clear invalid cookies
-      Cookies.remove("authToken");
-      Cookies.remove("user");
+      const studentRes = await axios.get(
+        `${VITE_BACKEND_BASE_URL}/api/students/profile`,
+        {
+          withCredentials: true,
+        }
+      );
+      setUser(studentRes.data);
+      setUserType("student");
+    } catch {
+      try {
+        const instituteRes = await axios.get(
+          `${VITE_BACKEND_BASE_URL}/api/institutes/profile`,
+          {
+            withCredentials: true,
+          }
+        );
+        setUser(instituteRes.data);
+        setUserType("institute");
+      } catch {
+        setUser(null);
+        setUserType(null);
+      }
     } finally {
-      setLoading(false);
+      setLoading(false); 
     }
-  }, []);
+  };
 
-  // Logout function to clear cookies and reset state
-  const logout = () => {
-    Cookies.remove("authToken");
-    Cookies.remove("user");
-    setAuthToken(null);
-    setUser(null);
-    setShowLogin(false);
-    setShowSignup(false);
-    setShowEmailVerification(false);
+  // Initial load on mount
+  useEffect(() => {
+    fetchUser();
+  }, []); 
+
+  // Fetch user again only when shouldFetchUser becomes true (e.g. after login)
+  useEffect(() => {
+    if (shouldFetchUser) {
+      fetchUser();
+      setShouldFetchUser(false);
+    }
+  }, [shouldFetchUser]);
+
+  // Optional: Refetch user after login/signup modals close
+  // But only if needed, can be removed if you manage shouldFetchUser correctly
+  /*
+  useEffect(() => {
+    if (!showLogin && !showSignup) {
+      fetchUser();
+    }
+  }, [showLogin, showSignup]);
+  */
+
+  const logout = async () => {
+    try {
+      if (userType === "student") {
+        await axios.post(
+          `${VITE_BACKEND_BASE_URL}/api/students/logout`,
+          {},
+          {
+            withCredentials: true,
+          }
+        );
+      } else if (userType === "institute") {
+        await axios.post(
+          `${VITE_BACKEND_BASE_URL}/api/institutes/logout`,
+          {},
+          {
+            withCredentials: true,
+          }
+        );
+      }
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      setUser(null);
+      setUserType(null);
+      setShowLogin(false);
+      setShowSignup(false);
+      setShowEmailVerification(false);
+    }
   };
 
   const value = {
@@ -52,11 +109,13 @@ const AppContextProvider = ({ children }) => {
     setShowEmailVerification,
     user,
     setUser,
-    authToken,
-    setAuthToken,
-    isAuthenticated: !!authToken && !!user,
+    userType,
+    setUserType,
+    isAuthenticated: !!user && !!userType,
     logout,
     loading,
+    shouldFetchUser,
+    setShouldFetchUser, // Important: expose this so Login can trigger fetchUser after login
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -10,7 +10,7 @@ import Footer from "../components/Footer";
 
 const HomePage = () => {
   return (
-    <div className="h-screen w-full">
+   <div className="w-full overflow-x-hidden bg-white">
       <Navbar />
       <Header />
       <StudyPath />

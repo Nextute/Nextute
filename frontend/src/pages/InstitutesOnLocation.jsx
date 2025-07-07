@@ -1,153 +1,450 @@
-import React, { useState } from "react";
-import { assets } from "../assets/assets";
-import { NavLink } from "react-router-dom";
-import { RectangleIcon } from "../components/RectangleIcon";
+import React, { useEffect, useState, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { FaLocationDot } from "react-icons/fa6";
 import { Search } from "lucide-react";
+import Navbar from "../components/Navbar";
 import Card from "../components/Card";
 import Footer from "../components/Footer";
+import { FaTimes } from "react-icons/fa";
+import axios from "axios";
+import { useContext } from "react";
+import { AppContext } from "../context/AppContext";
 
-const filter = [
-  { id: 1, name: "filter 1" },
-  { id: 2, name: "filter 2" },
-  { id: 3, name: "filter 3" },
-  { id: 4, name: "filter 4" },
-  { id: 5, name: "filter 5" },
-  { id: 6, name: "filter 6" },
-  { id: 7, name: "filter 7" },
-];
+const filters = {
+  distance: [
+    { id: "1-3km", name: "1-3 km" },
+    { id: "3-5km", name: "3-5 km" },
+    { id: "nearby", name: "Nearby" },
+    { id: "all", name: "All" },
+  ],
+  courseType: [
+    { id: "JEE", name: "JEE" },
+    { id: "NEET", name: "NEET" },
+    { id: "UPSC", name: "UPSC" },
+    { id: "CAT", name: "CAT" },
+    { id: "Boards", name: "Class 9-12 (Boards)" },
+    { id: "Coding", name: "Coding/Computer Courses" },
+    { id: "all", name: "All" },
+  ],
+  rating: [
+    { id: "4+", name: "4+ (Excellent)" },
+    { id: "3+", name: "3+ (Good)" },
+    { id: "all", name: "All" },
+  ],
+  modeOfTeaching: [
+    { id: "online", name: "Online" },
+    { id: "offline", name: "Offline" },
+    { id: "hybrid", name: "Hybrid" },
+    { id: "all", name: "All" },
+  ],
+};
 
 const InstitutesOnLocation = () => {
-  const [activeItemId, setActivePathId] = useState(1);
+  const [activeFilters, setActiveFilters] = useState({
+    distance: "all",
+    courseType: "all",
+    rating: "all",
+    modeOfTeaching: "all",
+  });
+  const [institutes, setInstitutes] = useState([]); // Original API data
+  const [filteredInstitutes, setFilteredInstitutes] = useState([]); // Filtered data
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [locationQuery, setLocationQuery] = useState("Hajipur");
+  const [showFilterDropdown, setShowFilterDropdown] = useState(null);
+  const location = useLocation();
+  const filterRef = useRef(null);
+  const { VITE_BACKEND_BASE_URL } = useContext(AppContext);
+
+  // Fetch institutes from backend using axios
+  useEffect(() => {
+    const fetchInstitutes = async () => {
+      setLoading(true);
+      try {
+        console.log("Fetching institutes from /api/institutes...");
+        const response = await axios.get(`${VITE_BACKEND_BASE_URL}/api/institutes/institutes-data`);
+        console.log("Response status:", response.status);
+        console.log("Response data:", response.data);
+
+        if (response.status !== 200) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        // Ensure response.data is an array
+        if (!Array.isArray(response.data)) {
+          console.error("Response data is not an array:", response.data);
+          throw new Error("Invalid response format: Expected an array");
+        }
+
+        // Parse JSON fields if necessary
+        const parsedData = response.data.map((institute) => {
+          try {
+            return {
+              ...institute,
+              courses:
+                typeof institute.courses === "string"
+                  ? JSON.parse(institute.courses)
+                  : institute.courses || [],
+              basic_info:
+                typeof institute.basic_info === "string"
+                  ? JSON.parse(institute.basic_info)
+                  : institute.basic_info || {},
+              contact_details:
+                typeof institute.contact_details === "string"
+                  ? JSON.parse(institute.contact_details)
+                  : institute.contact_details || {},
+            };
+          } catch (parseError) {
+            console.error(
+              `Error parsing JSON for institute ${institute.institute_id}:`,
+              parseError
+            );
+            return institute; // Fallback to raw institute data
+          }
+        });
+
+        setInstitutes(parsedData);
+        setFilteredInstitutes(parsedData);
+        setError(null);
+        console.log("Institutes set successfully:", parsedData);
+      } catch (err) {
+        console.error("Fetch institutes error:", {
+          message: err.message,
+          response: err.response
+            ? {
+                status: err.response.status,
+                data: err.response.data,
+              }
+            : "No response data",
+        });
+        setError("Failed to load institutes. Please try again later.");
+      } finally {
+        setLoading(false);
+        console.log("Fetch institutes complete, loading:", false);
+      }
+    };
+    fetchInstitutes();
+  }, []);
+
+  // Extract query from URL and set location
+  useEffect(() => {
+    const query = new URLSearchParams(location.search).get("query") || "";
+    console.log("URL query:", query);
+    setSearchQuery(query);
+    setLocationQuery(query || "Hajipur");
+  }, [location.search]);
+
+  // Filter logic
+  useEffect(() => {
+    console.log("Applying filters with:", { searchQuery, activeFilters });
+    let filtered = [...institutes];
+
+    if (searchQuery) {
+      filtered = filtered.filter((institute) => {
+        const matches =
+          institute.institute_name
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          institute.contact_details?.address
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          institute.courses?.some((course) =>
+            course.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+        console.log(
+          `Institute ${institute.institute_name || "Unknown"} matches search:`,
+          matches
+        );
+        return matches;
+      });
+    }
+
+    if (activeFilters.distance !== "all") {
+      if (activeFilters.distance === "nearby") {
+        filtered = filtered.filter((institute) => {
+          const matches = institute.basic_info?.distance <= 5;
+          console.log(
+            `Institute ${
+              institute.institute_name || "Unknown"
+            } matches nearby:`,
+            matches
+          );
+          return matches;
+        });
+      } else if (activeFilters.distance === "1-3km") {
+        filtered = filtered.filter((institute) => {
+          const matches =
+            institute.basic_info?.distance >= 1 &&
+            institute.basic_info?.distance <= 3;
+          console.log(
+            `Institute ${institute.institute_name || "Unknown"} matches 1-3km:`,
+            matches
+          );
+          return matches;
+        });
+      } else if (activeFilters.distance === "3-5km") {
+        filtered = filtered.filter((institute) => {
+          const matches =
+            institute.basic_info?.distance > 3 &&
+            institute.basic_info?.distance <= 5;
+          console.log(
+            `Institute ${institute.institute_name || "Unknown"} matches 3-5km:`,
+            matches
+          );
+          return matches;
+        });
+      }
+    }
+
+    if (activeFilters.courseType !== "all") {
+      filtered = filtered.filter((institute) => {
+        const matches = institute.courses?.includes(activeFilters.courseType);
+        console.log(
+          `Institute ${
+            institute.institute_name || "Unknown"
+          } matches courseType ${activeFilters.courseType}:`,
+          matches
+        );
+        return matches;
+      });
+    }
+
+    if (activeFilters.rating !== "all") {
+      if (activeFilters.rating === "4+") {
+        filtered = filtered.filter((institute) => {
+          const matches = institute.basic_info?.rating >= 4;
+          console.log(
+            `Institute ${
+              institute.institute_name || "Unknown"
+            } matches rating 4+:`,
+            matches
+          );
+          return matches;
+        });
+      } else if (activeFilters.rating === "3+") {
+        filtered = filtered.filter((institute) => {
+          const matches = institute.basic_info?.rating >= 3;
+          console.log(
+            `Institute ${
+              institute.institute_name || "Unknown"
+            } matches rating 3+:`,
+            matches
+          );
+          return matches;
+        });
+      }
+    }
+
+    if (activeFilters.modeOfTeaching !== "all") {
+      filtered = filtered.filter((institute) => {
+        const matches =
+          institute.basic_info?.modeOfTeaching === activeFilters.modeOfTeaching;
+        console.log(
+          `Institute ${
+            institute.institute_name || "Unknown"
+          } matches modeOfTeaching ${activeFilters.modeOfTeaching}:`,
+          matches
+        );
+        return matches;
+      });
+    }
+
+    setFilteredInstitutes(filtered);
+    console.log("Filtered institutes:", filtered);
+  }, [searchQuery, activeFilters, institutes]);
+
+  const handleFilterChange = (category, id) => {
+    console.log(`Changing filter: ${category} to ${id}`);
+    setActiveFilters((prev) => ({
+      ...prev,
+      [category]: id === prev[category] ? "all" : id,
+    }));
+    setShowFilterDropdown(null);
+  };
+
+  const resetFilters = () => {
+    console.log("Resetting all filters");
+    setActiveFilters({
+      distance: "all",
+      courseType: "all",
+      rating: "all",
+      modeOfTeaching: "all",
+    });
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (filterRef.current && !filterRef.current.contains(event.target)) {
+        console.log("Closing filter dropdown");
+        setShowFilterDropdown(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
-    <div>
-      {/* ------------NAVBAR-------------- */}
-      <div className="flex items-center justify-between ">
-        {/* Logo */}
-        <NavLink to="/">
-          <img
-            src={assets.logo}
-            alt="Nextute Logo"
-            className="w-28 sm:w-32 lg:w-40 ml-14"
-          />
-        </NavLink>
-
-        {/* RIGHT SECTION -> NAV LINKS*/}
-        <nav className="flex items-center gap-6 mr-32">
-          <NavLink
-            to="/services"
-            className={({ isActive }) =>
-              `nav-link ${isActive ? "active-nav-link" : ""}`
-            }
-          >
-            <p>Services</p>
-          </NavLink>
-          <button className="text-gray-700 px-7 py-2 cursor-pointer border border-gray-500 rounded-full">
-            Login
-          </button>
-
-          <button className="bg-[#2D7B67] text-white px-7 py-2 cursor-pointer border border-gray-500 rounded-full">
-            Sign Up
-          </button>
-        </nav>
+    <div className="w-full min-h-screen overflow-x-hidden bg-gray-50">
+      <div className="w-full max-w-[90rem] mx-auto">
+        <Navbar />
       </div>
 
-      {/* ------------HEADER CONTENT-------------- */}
-      <div className="w-full max-w-7xl flex items-center justify-between gap-10 mx-auto px-4 mb-8">
-        <h1 className=" w-full max-w-1/2 text-5xl font-semibold text-[#002639]">
-          Popular Tutorials in Hajipur
+      <div className="w-full max-w-[86rem] flex flex-col md:flex-row items-center justify-between gap-10 mx-auto px-4 sm:px-6 py-8">
+        <h1 className="w-full md:w-1/2 text-4xl sm:text-5xl font-bold text-[#002639]">
+          Popular Tutorials in {locationQuery}
         </h1>
 
-        {/*--------SEARCH COMPONENT--------*/}
-        <div className="flex items-center justify-between mt-4 w-full h-16 max-w-1/2 mx-auto shadow-custom border border-[#000000] rounded-full overflow-hidden">
-          {/* Left:  Input + ICON */}
-          <div className="flex items-center gap-2 ml-3 px-4 py-2 w-full">
-            <FaLocationDot className="text-green-700 size-6" />
+        <div className="flex items-center w-full md:w-1/2 h-14 sm:h-16 shadow-lg border border-gray-200 rounded-full overflow-hidden bg-white">
+          <div className="flex items-center gap-3 px-4 w-full">
+            <FaLocationDot className="text-green-600 size-5 sm:size-6" />
             <input
               type="text"
-              placeholder="Search by name..."
-              className="outline-none bg-[#FFFFFF] w-full text-gray-700 placeholder:[#000] placeholder:opacity-90 placeholder:text-xl"
+              placeholder="Search by name or location..."
+              className="outline-none w-full text-gray-700 text-lg placeholder-gray-500"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === "Enter" && searchQuery.trim()) {
+                  console.log("Search triggered with query:", searchQuery);
+                  window.location.href = `/institutes-on-location?query=${encodeURIComponent(
+                    searchQuery
+                  )}`;
+                }
+              }}
+              aria-label="Search by name or location"
             />
           </div>
-          <div className="relative h-full w-full flex items-center justify-center px-4 py-2">
-            {/* Background Rectangles */}
-            <div className="relative flex items-center justify-center">
-              {/* First Rectangle */}
-              <RectangleIcon
-                height={190}
-                width={75}
-                color="#204B55"
-                className="absolute transform rotate-[51deg] translate-x-[200%] z-10 mix-blend-multiply"
-              />
-              {/* Second Rectangle */}
-              <RectangleIcon
-                height={160}
-                width={50}
-                color="#AAD294"
-                className="absolute transform -rotate-[48deg] translate-x-[290%] z-10 mix-blend-multiply"
-              />
-              {/* Filter Icon */}
-              <img
-                src={assets.filter}
-                alt="Filter Icon"
-                className="size-4 translate-x-[225%] cursor-pointer"
-              />
-              {/* Search Icon */}
-              <Search className="absolute translate-x-[550%] size-6 text-white z-50" />
-            </div>
-          </div>
+          <button
+            onClick={() => {
+              if (searchQuery.trim()) {
+                console.log("Search button clicked with query:", searchQuery);
+                window.location.href = `/institutes-on-location?query=${encodeURIComponent(
+                  searchQuery
+                )}`;
+              }
+            }}
+            className="px-4 py-2 bg-[#2D7B67] text-white rounded-r-full hover:bg-[#256a57] transition"
+            aria-label="Search institutes"
+          >
+            <Search className="size-5 sm:size-6" />
+          </button>
         </div>
       </div>
 
-      {/* ADEVRTISMENT CONTENT */}
-      <div className="w-full max-w-7xl px-4 py-8 bg-gray-400 mx-auto rounded-2xl mb-8">
-        <p className="text-black text-4xl md:text-6xl lg:text-8xl text-center font-bold">
+      <div className="w-full max-w-[86rem] mx-auto px-4 sm:px-6 mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap gap-2 sm:gap-4">
+            {Object.keys(filters).map((category) => (
+              <div key={category} className="relative" ref={filterRef}>
+                <button
+                  onClick={() => {
+                    console.log(`Opening filter dropdown for ${category}`);
+                    setShowFilterDropdown(
+                      showFilterDropdown === category ? null : category
+                    );
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 text-sm sm:text-base hover:bg-gray-100 transition"
+                  aria-label={`Filter by ${category}`}
+                >
+                  {category.charAt(0).toUpperCase() +
+                    category
+                      .slice(1)
+                      .replace(/([A-Z])/g, " $1")
+                      .trim()}
+                  <span className="text-gray-500">
+                    {filters[category].find(
+                      (item) => item.id === activeFilters[category]
+                    )?.name || "All"}
+                  </span>
+                </button>
+                {showFilterDropdown === category && (
+                  <div className="absolute z-10 mt-2 w-48 bg-white border border-gray-300 rounded-lg shadow-lg">
+                    {filters[category].map((item) => (
+                      <div
+                        key={item.id}
+                        onClick={() => handleFilterChange(category, item.id)}
+                        className={`px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer ${
+                          activeFilters[category] === item.id
+                            ? "bg-[#2D7B67] text-white"
+                            : "text-gray-700"
+                        }`}
+                      >
+                        {item.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={resetFilters}
+            className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm sm:text-base hover:bg-red-600 transition"
+            aria-label="Clear all filters"
+          >
+            Clear All Filters
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-2 mt-4">
+          {Object.entries(activeFilters).map(
+            ([category, id]) =>
+              id !== "all" && (
+                <div
+                  key={category}
+                  className="flex items-center gap-1 px-3 py-1 bg-[#2D7B67] text-white text-sm rounded-full"
+                >
+                  {filters[category].find((item) => item.id === id)?.name || id}
+                  <FaTimes
+                    className="size-4 cursor-pointer"
+                    onClick={() => handleFilterChange(category, "all")}
+                  />
+                </div>
+              )
+          )}
+        </div>
+      </div>
+
+      <div className="w-full max-w-[86rem] px-4 sm:px-6 py-6 sm:py-8 mx-auto mb-8">
+        <p className="text-black bg-gray-200 px-4 py-6 sm:px-6 sm:py-8 rounded-2xl text-3xl md:text-6xl lg:text-8xl text-center font-bold">
           Advertisement
         </p>
       </div>
 
-      {/*-------------FILTER CONTENT---------------*/}
-      <div className="w-full max-w-7xl flex items-center justify-evenly mx-auto gap-20 overflow-x-auto scrollbar-hide">
-        {filter.map((item) => (
-          <div
-            key={item.id}
-            onClick={() => setActivePathId(item.id)}
-            className={`flex-shrink-0 rounded-full px-6 py-1 cursor-pointer transition-colors duration-300 
-            ${
-              activeItemId === item.id
-                ? "bg-[#2D7B67] text-white"
-                : "bg-[#F8F7F8] text-[#000000]"
-            }`}
-          >
-            <p className="text-lg md:text-xl font-medium whitespace-nowrap">
-              {item.name}
-            </p>
-          </div>
-        ))}
-      </div>
+      {loading ? (
+        <div className="w-full max-w-[88rem] mx-auto sm:mx-20 px-3 sm:px-4 py-6 sm:py-8 gap-4 sm:gap-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="w-full max-w-[24rem] sm:max-w-[25rem] bg-white border border-gray-200 rounded-xl shadow-sm animate-pulse"
+            >
+              <div className="w-full aspect-[4/3] bg-gray-200 rounded-t-xl"></div>
+              <div className="p-4 space-y-3">
+                <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+                <div className="flex items-center justify-between">
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                </div>
+                <div className="h-4 bg-gray-200 rounded w-full"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : error ? (
+        <div className="text-center p-4 text-red-500 text-lg">{error}</div>
+      ) : filteredInstitutes.length === 0 ? (
+        <div className="text-center p-4 text-gray-600 text-lg">
+          No results found for "{searchQuery}"
+        </div>
+      ) : (
+        <div className="w-full max-w-[88rem] mx-auto sm:mx-20 px-3 sm:px-4 py-6 sm:py-8 gap-4 sm:gap-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 space-y-4 sm:space-y-0">
+          {filteredInstitutes.map((institute) => (
+            <Card key={institute.institute_id} institute={institute} />
+          ))}
+        </div>
+      )}
 
-      {/*------------MAIN CONTENT -> COACHING INFORMATION-----------------*/}
-      <div className="w-full max-w-7xl grid grid-cols-3 gap-3 mx-auto">
-        <Card />
-        <Card />
-        <Card />
-        <Card />
-        <Card />
-        <Card />
-        <Card />
-        <Card />
-        <Card />
-        <Card />
-        <Card />
-        <Card />
-        <Card />
-        <Card />
-        <Card />
-      </div>
-
-      {/*------------FOOTER CONTENT-----------------*/}
-      <div className="w-full mt-24">
+      <div className="w-full mt-8">
         <Footer />
       </div>
     </div>

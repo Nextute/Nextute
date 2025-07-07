@@ -1,92 +1,68 @@
-import pool from "../db/index.js";
+import prisma from "../db/index.js";
+import { nanoid } from "nanoid";
 
 const createInstitute = async (institute) => {
-  const {
-    institute_id,
-    institute_name,
-    email,
-    password,
-    contact,
-    code,
-    code_expires_at,
-  } = institute;
-
-  const query = `
-    INSERT INTO institutes 
-      (institute_name, email, password, contact, code, code_expires_at, institute_id)
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
-    RETURNING *;
-  `;
-
-  const values = [
-    institute_name,
-    email,
-    password,
-    contact,
-    code,
-    code_expires_at,
-    institute_id,
-  ];
-
-  const { rows } = await pool.query(query, values);
-  return rows[0];
+  const institute_id = `NXI_${nanoid(6)}`;
+  return await prisma.institute.create({
+    data: {
+      institute_id,
+      institute_name: institute.institute_name,
+      email: institute.email,
+      password: institute.password,
+      contact: institute.contact,
+      code: institute.code,
+      code_expires_at: institute.code_expires_at,
+    },
+  });
 };
 
-const updateInstituteSection = async (id, section, data) => {
+const updateInstituteSection = async (id, column, data) => {
   const validSections = [
     "basic_info",
     "contact_details",
     "courses",
-    "faculty",
+    "faculty_details",
+    "student_achievements",
+    "institute_achievements",
     "facilities",
     "social_media",
-    "logo_url",
+    "media_gallery",
   ];
 
-  if (!validSections.includes(section)) {
+  if (!validSections.includes(column)) {
     throw new Error("Invalid section");
   }
 
-  const query = `
-    UPDATE institutes 
-    SET ${section} = $1 
-    WHERE id = $2
-    RETURNING *;
-  `;
-  const { rows } = await pool.query(query, [data, id]);
-  return rows[0];
+  return await prisma.institute.update({
+    where: { id },
+    data: { [column]: data, updated_at: new Date() },
+  });
 };
 
 const findInstituteByEmail = async (email) => {
-  const { rows } = await pool.query(
-    "SELECT * FROM institutes WHERE email = $1",
-    [email]
-  );
-  return rows[0];
+  return await prisma.institute.findUnique({
+    where: { email },
+  });
 };
 
 const findInstituteByPhone = async (phone) => {
-  const { rows } = await pool.query(
-    "SELECT * FROM institutes WHERE contact = $1",
-    [phone]
-  );
-  return rows[0];
+  return await prisma.institute.findFirst({
+    where: { contact: phone },
+  });
 };
 
 const verifyInstitute = async (email) => {
-  const { rows } = await pool.query(
-    "UPDATE institutes SET is_verified = true, code = NULL WHERE email = $1 RETURNING *",
-    [email]
-  );
-  return rows[0];
+  return await prisma.institute.update({
+    where: { email },
+    data: { is_verified: true, code: null, code_expires_at: null },
+  });
 };
 
 const isInstituteIdUnique = async (institute_id) => {
-  const { rows } = await pool.query(
-    "SELECT * FROM institutes WHERE institute_id = $1",
-    [institute_id]
-  );
-  return rows.length === 0;
+  const institute = await prisma.institute.findUnique({
+    where: { institute_id },
+  });
+  return !institute;
 };
 
 export {
