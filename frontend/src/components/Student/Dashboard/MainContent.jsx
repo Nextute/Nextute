@@ -9,12 +9,15 @@ const genderIcons = {
 };
 
 const MainContent = ({ studentData }) => {
+  // Safe fallback in case studentData or studentData.data is undefined
+  const data = studentData?.data || {};
+
   const [isEditing, setIsEditing] = useState({
     address: false,
     guardian: false,
   });
-  const [address, setAddress] = useState("");
-  const [guardianName, setGuardianName] = useState("");
+  const [address, setAddress] = useState(data.address || "");
+  const [guardianName, setGuardianName] = useState(data.guardianName || "");
   const addressInputRef = useRef(null);
   const guardianInputRef = useRef(null);
 
@@ -25,9 +28,9 @@ const MainContent = ({ studentData }) => {
     }));
     setTimeout(() => {
       if (field === "address") {
-        addressInputRef.current.focus();
+        addressInputRef.current?.focus();
       } else if (field === "guardian") {
-        guardianInputRef.current.focus();
+        guardianInputRef.current?.focus();
       }
     }, 0);
   };
@@ -58,7 +61,7 @@ const MainContent = ({ studentData }) => {
               <p className="text-xl font-semibold text-black">Student Id</p>
             </div>
             <p className="text-sm text-[#263238] font-medium px-20 py-2">
-              {studentData.data.student_id}
+              {data.student_id || "N/A"}
             </p>
           </div>
 
@@ -67,9 +70,9 @@ const MainContent = ({ studentData }) => {
             <div className="flex items-center px-16 gap-2">
               <img
                 src={
-                  studentData.data.gender?.toLowerCase() === "male"
+                  data.gender?.toLowerCase() === "male"
                     ? genderIcons.male
-                    : studentData.data.gender?.toLowerCase() === "female"
+                    : data.gender?.toLowerCase() === "female"
                     ? genderIcons.female
                     : genderIcons.default
                 }
@@ -79,7 +82,7 @@ const MainContent = ({ studentData }) => {
               <p className="text-xl font-semibold text-black">Gender</p>
             </div>
             <p className="text-sm text-[#263238] font-medium px-24 py-2">
-              {studentData.data.gender}
+              {data.gender || "Not specified"}
             </p>
           </div>
         </div>
@@ -147,10 +150,8 @@ const MainContent = ({ studentData }) => {
                 </p>
               </div>
               <p className="text-base font-medium text-black px-[6.5rem] py-3">
-                {studentData.data.date_of_birth
-                  ? new Date(
-                      studentData.data.date_of_birth
-                    ).toLocaleDateString()
+                {data.date_of_birth
+                  ? new Date(data.date_of_birth).toLocaleDateString()
                   : "Not provided"}
               </p>
             </div>

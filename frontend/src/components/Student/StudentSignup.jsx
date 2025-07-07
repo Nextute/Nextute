@@ -7,7 +7,6 @@ import PasswordStrength from "../../context/PasswordStrength.jsx";
 import { AppContext } from "../../context/AppContext.jsx";
 import PhoneNumberValidator from "../../context/PhoneNumberValidator.jsx";
 import Cookies from "js-cookie";
-import axios from "axios";
 
 // Sanitize input to prevent XSS
 const sanitizeInput = (input) => input.replace(/[<>]/g, "");
@@ -58,8 +57,9 @@ const StudentSignup = () => {
   const {
     VITE_BACKEND_BASE_URL,
     setShowEmailVerification,
-    setAuthToken,
     setUser,
+    setUserType,
+    setShowSignup,
   } = useContext(AppContext);
 
   const navigate = useNavigate();
@@ -164,39 +164,52 @@ const StudentSignup = () => {
       const formData = {
         name,
         email,
-        phoneNumber,
+        phoneNumber: phoneValidation.e164 || phoneNumber,
         dateOfBirth: dob.toISOString(),
         gender,
         password,
       };
 
-      const response = await axios.post(
+      const response = await fetch(
         `${VITE_BACKEND_BASE_URL}/api/students/signup`,
-        formData,
-        { withCredentials: true }
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(formData),
+        }
       );
 
-      const { data } = response;
+      const data = await response.json();
 
-      // Set cookies
-      Cookies.set("authToken", data.token, { expires: 7 });
-      Cookies.set("user", JSON.stringify(data.user), { expires: 7 });
-      Cookies.set("signupEmail", email, { expires: 1 });
-      Cookies.set("userType", "student", { expires: 1 });
+      if (!response.ok) {
+        throw new Error(data.message || data.error || "Registration failed.");
+      }
 
-      setAuthToken(data.token);
-      setUser(data.user);
+      // console.log("frontend", data.token);
+      // console.log("frontend", data.user);
+
+      console.log("Signup successful, token received:", data);
+
+  
+      // Store email and user type for verification flow (using cookies)
+      Cookies.set("signupEmail", email, {
+        expires: 1,
+      });
+      Cookies.set("userType", "student", {
+        expires: 1,
+      });
 
       toast.success("Registration successful! Please verify your email.");
+      setUser(data.user);
+      setUserType(data.user?.type || "student");
+      setShowSignup(false);
       setShowEmailVerification(true);
+      navigate("/verify");
       navigate("/verify");
     } catch (error) {
       console.error("Signup error:", error);
-      toast.error(
-        error.response?.data?.message ||
-          error.message ||
-          "Something went wrong."
-      );
+      toast.error(error.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }

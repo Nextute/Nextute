@@ -1,28 +1,42 @@
 import express from "express";
-const router = express.Router();
-
-import instituteAuth from "../middlewares/instituteAuthMiddleware.js";
 import {
+  uploadImageHandler,
+  uploadVideoHandler,
+  handleImageUpload,
+  handleVideoUpload,
+} from "../controllers/instituteMediaController.js";
+import {
+  updateProfileSection,
+  getInstituteProfile,
   signup,
   verifyCode,
   login,
-  updateProfileSection,
-  getInstituteProfile,
   logout,
 } from "../controllers/instituteAuthController.js";
-
-import upload from "../config/multer.js";
-import { uploadLogo } from "../controllers/instituteMediaController.js";
+import instituteAuth from "../middlewares/instituteAuthMiddleware.js";
 import { validateEmailDomain } from "../middlewares/emailValidationMiddleware.js";
+
+const router = express.Router();
 
 router.get("/profile", instituteAuth, getInstituteProfile);
 
+router.patch(
+  "/upload/image",
+  instituteAuth,
+  uploadImageHandler,
+  handleImageUpload
+);
+router.patch(
+  "/upload/video",
+  instituteAuth,
+  uploadVideoHandler,
+  handleVideoUpload
+);
 router.patch("/me/:section", instituteAuth, updateProfileSection);
 
 router.post("/signup", validateEmailDomain, signup);
-router.post("/verify", verifyCode);
+router.post("/verify", validateEmailDomain, verifyCode);
 router.post("/auth/login", login);
-router.post("/me/logo", instituteAuth, upload.single("logo"), uploadLogo);
-router.post("/logout", logout);
+router.post("/logout", instituteAuth, logout);
 
 export default router;

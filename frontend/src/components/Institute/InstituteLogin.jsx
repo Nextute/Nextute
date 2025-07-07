@@ -7,8 +7,6 @@ import { Eye, EyeOff } from "lucide-react";
 import { AppContext } from "../../context/AppContext";
 import { useNavigate } from "react-router-dom";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
-import Cookies from "js-cookie";
-import axios from "axios";
 
 // Sanitize input to prevent XSS
 const sanitizeInput = (input) => input.replace(/[<>]/g, "");
@@ -71,8 +69,7 @@ const InstituteLogin = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState({ loginInput: "", password: "" });
 
-  const { VITE_BACKEND_BASE_URL, setAuthToken, setUser } =
-    useContext(AppContext);
+  const { VITE_BACKEND_BASE_URL } = useContext(AppContext);
   const navigate = useNavigate();
 
   // Real-time validation
@@ -98,10 +95,8 @@ const InstituteLogin = () => {
   const onSubmitHandler = async (e) => {
     e.preventDefault();
 
-    const sanitizedLoginInput = sanitizeInput(loginInput.trim());
-    const sanitizedPassword = sanitizeInput(password.trim());
-
-    const isEmail = sanitizedLoginInput.includes("@");
+    const sanitizedLoginInput = sanitizeInput(loginInput);
+    const sanitizedPassword = sanitizeInput(password);
 
     // Check for empty fields
     if (!sanitizedLoginInput || !sanitizedPassword) {
@@ -109,11 +104,12 @@ const InstituteLogin = () => {
         loginInput: sanitizedLoginInput ? "" : "Phone or email is required.",
         password: sanitizedPassword ? "" : "Password is required.",
       });
-      return toast.error("Please fill in all fields.");
+      return;
     }
 
     // Validate input and determine type
     const validation = validateInput(sanitizedLoginInput);
+
     if (!validation.isValid) {
       setErrors((prev) => ({
         ...prev,
@@ -133,44 +129,43 @@ const InstituteLogin = () => {
       return;
     }
 
-    const payload = isEmail
-      ? { email: sanitizedLoginInput, password: sanitizedPassword }
-      : { phone: sanitizedLoginInput, password: sanitizedPassword };
-
     setLoading(true);
     try {
-      const response = await axios.post(
+      // Create payload based on input type
+      const payload = {
+        password: sanitizedPassword,
+        rememberMe,
+      };
+
+      // Add email or phone based on validation result
+      if (validation.type === "email") {
+        payload.email = sanitizedLoginInput;
+      } else {
+        payload.phone = validation.value; 
+      }
+
+      const response = await fetch(
         `${VITE_BACKEND_BASE_URL}/api/institutes/auth/login`,
-        payload,
         {
-          headers: { "Content-Type": "application/json" },
-          withCredentials: true,
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify(payload),
         }
       );
 
-      const data = response.data;
-
-      if (!data.token || !data.user) {
-        throw new Error("Invalid response: Missing token or user data.");
+      if (response.ok) {
+        toast.success("Login successful!");
+        window.location.href = "http://localhost:5173/";
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.message || "Login failed. Please try again.");
       }
-
-      Cookies.set("authToken", data.token, { expires: 7, secure: true });
-      Cookies.set("user", JSON.stringify(data.user), {
-        expires: 7,
-        secure: true,
-      });
-      Cookies.set("userType", "institute", { expires: 7, secure: true });
-
-      setAuthToken(data.token);
-      setUser(data.user);
-
-      toast.success("Login successful!");
-      navigate("/");
     } catch (error) {
-      console.error("Login failed:", error);
       const errorMessage =
         error.response?.data?.message ||
-        error.message ||
         "Login failed. Please check your credentials and try again.";
       toast.error(errorMessage);
     } finally {

@@ -1,6 +1,4 @@
 import express from "express";
-const router = express.Router();
-
 import studentAuth from "../middlewares/studentAuthMiddleware.js";
 import {
   signup,
@@ -9,14 +7,15 @@ import {
   getStudentProfile,
   logout,
 } from "../controllers/studentAuthController.js";
-
 import { validateEmailDomain } from "../middlewares/emailValidationMiddleware.js";
+
+const router = express.Router();
 
 router.get("/profile", studentAuth, getStudentProfile);
 
 router.post("/signup", validateEmailDomain, signup);
-router.post("/verify", verifyCode);
+router.post("/verify", validateEmailDomain, verifyCode);
 router.post("/auth/login", login);
-router.post("/logout", logout);
+router.post("/logout", studentAuth, logout);
 
 export default router;

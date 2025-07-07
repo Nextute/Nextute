@@ -1,48 +1,57 @@
 import jwt from "jsonwebtoken";
-import pool from "../db/index.js";
+import prisma from "../db/index.js";
 import { promisify } from "util";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const studentAuth = async (req, res, next) => {
   try {
-    const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
-    // console.log("auth", token);
-    
+    const token =
+      req.cookies.authToken || req.headers.authorization?.split(" ")[1];
+
     if (!token) {
       return res.status(401).json({
         status: false,
         message: "Student authentication required",
+        error: "UNAUTHORIZED",
       });
     }
 
     const decoded = await promisify(jwt.verify)(token, process.env.TOKEN_KEY);
 
-    const query = {
-      text: "SELECT * FROM students WHERE id = $1::uuid",
-      values: [decoded.id],
-    };
-
-    const { rows } = await pool.query(query);
-
-    if (rows.length === 0) {
-      return res.status(401).json({ error: "Student not found" });
+    if (decoded.type !== "student") {
+      return res.status(403).json({
+        status: false,
+        message: "Invalid token type for student route",
+        error: "FORBIDDEN",
+      });
     }
 
-    req.student = rows[0];
+    const student = await prisma.student.findUnique({
+      where: { id: decoded.id },
+    });
+
+    if (!student) {
+      return res.status(404).json({
+        status: false,
+        message: "Student not found",
+        error: "NOT_FOUND",
+      });
+    }
+
+    req.student = student;
     next();
   } catch (error) {
     console.error("Auth Middleware Error:", {
       message: error.message,
       stack: error.stack,
-      token: req.headers.authorization?.split(" ")[1],
     });
-
-    return res.status(500).json({
+    return res.status(401).json({
       status: false,
       message: "Authentication failed",
       error:
-        process.env.NODE_ENV === "development"
-          ? error.message
-          : "Internal server error",
+        process.env.NODE_ENV === "development" ? error.message : "UNAUTHORIZED",
     });
   }
 };

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
-import { toast } from "react-hot-toast";
 import Cookies from "js-cookie";
 import { assets } from "../assets/assets";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
+import { AppContext } from "../context/AppContext";
 
 const EmailVerificationPage = () => {
   const [code, setCode] = useState(["", "", "", "", "", ""]);
@@ -14,91 +15,104 @@ const EmailVerificationPage = () => {
   const inputRefs = Array(6)
     .fill()
     .map(() => React.createRef());
-
-  const VITE_BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL; 
+  const VITE_BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL;
   const navigate = useNavigate();
+  const { setUser, setAuthToken } = useContext(AppContext);
 
-  // Load email and userType from cookies
   useEffect(() => {
     const storedEmail = Cookies.get("signupEmail");
     const storedUserType = Cookies.get("userType");
 
     if (!storedEmail || !storedUserType) {
-      toast.error("Missing signup information. Please sign up again.");
-      userType === "institute"
-        ? navigate("/institute/signup")
-        : navigate("/student/signup"); // Redirect to signup if cookies are missing
-    } else {
-      setEmail(storedEmail);
-      setUserType(storedUserType);
+      toast.error("Missing signup info. Please signup again.");
+      navigate(
+        "/" +
+          (storedUserType === "institute" ? "institute" : "student") +
+          "/signup"
+      );
+      return;
     }
 
-    if (inputRefs[0].current) inputRefs[0].current.focus();
+    setEmail(storedEmail);
+    setUserType(storedUserType);
+    inputRefs[0].current?.focus();
 
-    const timer = setInterval(() => {
+    const interval = setInterval(() => {
       setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => clearInterval(interval);
   }, [navigate]);
 
   const handleCodeChange = (index, value) => {
     if (/^\d?$/.test(value)) {
-      const newCode = [...code];
-      newCode[index] = value;
-      setCode(newCode);
-      if (value && index < 5) inputRefs[index + 1].current.focus();
-      if (!value && index > 0) inputRefs[index - 1].current.focus();
+      const updated = [...code];
+      updated[index] = value;
+      setCode(updated);
+
+      if (value && index < 5) inputRefs[index + 1].current?.focus();
+      if (!value && index > 0) inputRefs[index - 1].current?.focus();
     }
   };
 
   const handleKeyDown = (index, e) => {
     if (e.key === "Backspace" && !code[index] && index > 0) {
-      inputRefs[index - 1].current.focus();
+      inputRefs[index - 1].current?.focus();
     }
   };
 
-  const getVerifyEndpoint = () => {
-    return userType === "institute"
+  const getVerifyEndpoint = () =>
+    userType === "institute"
       ? "/api/institutes/verify"
       : "/api/students/verify";
-  };
 
   const handleVerify = async (e) => {
     e.preventDefault();
-    const verificationCode = code.join("");
+    const fullCode = code.join("");
 
-    if (verificationCode.length !== 6) {
-      toast.error("Please enter a 6-digit code");
-      return;
-    }
-
-    if (!userType || !email) {
-      toast.error("Missing user info. Please try signing up again.");
-      navigate("/");
-      return;
-    }
+    if (fullCode.length !== 6) return toast.error("Please enter all 6 digits");
 
     setIsLoading(true);
+
+    const userType = Cookies.get("userType"); // Read userType from cookies
+
     try {
-      const endpoint = getVerifyEndpoint();
-      const response = await axios.post(`${VITE_BACKEND_BASE_URL}${endpoint}`, {
-        email,
-        code: verificationCode,
-      });
+      const res = await axios.post(
+        `${VITE_BACKEND_BASE_URL}${getVerifyEndpoint()}`,
+        {
+          email,
+          code: fullCode,
+        }
+      );
 
-      toast.success(response.data.message || "Verification successful", {
-        duration: 1500,
-      });
+      // ✅ Save user + token to cookies
+      const userData = res.data.user;
+      const token = res.data.token;
 
-      // Clear cookies
+      if (userData && token) {
+        Cookies.set("authToken", token, { path: "/" });
+        Cookies.set("user", JSON.stringify(userData), { path: "/" });
+
+        setUser(userData); // ✅ update context
+        setAuthToken(token); // ✅ update context
+      }
+
+      toast.success(res.data.message || "Verified successfully");
+
+      // Remove cookies after successful verification
       Cookies.remove("signupEmail");
       Cookies.remove("userType");
 
-      // Navigate to homepage
-      navigate("/");
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Verification failed");
+      // Redirect based on userType
+      if (userType === "student") {
+        navigate("/"); // Redirect student to homepage
+      } else if (userType === "institute") {
+        navigate("/institute/basic-info");
+      } else {
+        navigate("/"); // fallback in case userType is missing or invalid
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Verification failed");
     } finally {
       setIsLoading(false);
     }
@@ -108,48 +122,47 @@ const EmailVerificationPage = () => {
     e.preventDefault();
     if (resendCooldown > 0) return;
 
-    if (!userType || !email) {
-      toast.error("Missing user info. Please try signing up again.");
-      navigate("/signup");
-      return;
-    }
-
-    setIsLoading(true);
     try {
-      const endpoint = getVerifyEndpoint();
-      await axios.post(`${VITE_BACKEND_BASE_URL}${endpoint}`, { email });
+      setIsLoading(true);
+      await axios.post(`${VITE_BACKEND_BASE_URL}${getVerifyEndpoint()}`, {
+        email,
+      });
       toast.success("New code sent to your email");
       setResendCooldown(60);
       setCode(["", "", "", "", "", ""]);
-      inputRefs[0].current.focus();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to resend code");
+      inputRefs[0].current?.focus();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to resend code");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-teal-300">
-      <div className="bg-white/90 backdrop-blur-sm p-8 rounded-2xl shadow-lg w-full max-w-md">
-        <div className="flex items-center justify-center mx-auto -my-10">
-          <img src={assets.logo} alt="logo" className="w-36" />
+    <div className="min-h-screen w-full bg-[url('/src/assets/signup_bg.png')] bg-cover bg-center flex items-center justify-center relative">
+      <div className="absolute inset-0 backdrop-blur-sm bg-black/30 z-0" />
+
+      <div className="relative z-10 bg-white/95 border border-gray-200 rounded-2xl shadow-xl p-6 md:p-8 max-w-lg w-full">
+        <div className="flex justify-center mb-4">
+          <img src={assets.logo} alt="Logo" className="w-36" />
         </div>
-        <h2 className="text-2xl font-bold text-gray-800 text-center mb-4">
-          Verify Your Account
+
+        <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">
+          Verify Your Email
         </h2>
-        <p className="text-gray-600 text-center mb-2">
-          We emailed you the six digit code to {email}
+        <p className="text-center text-sm text-gray-600 mb-1">
+          We sent a 6-digit code to <span className="font-medium">{email}</span>
         </p>
-        <p className="text-sm text-gray-500 text-center mb-6">
-          Verifying as:{" "}
+        <p className="text-center text-sm text-gray-500 mb-3">
+          Verifying as{" "}
           <span className="font-semibold capitalize">{userType}</span>
         </p>
-        <p className="text-gray-600 text-center mb-6">
-          Enter the code below to confirm your email address
+        <p className="text-center text-sm text-gray-700 mb-6">
+          Enter the code below to confirm your account.
         </p>
+
         <form onSubmit={handleVerify}>
-          <div className="flex justify-center space-x-3 mb-6">
+          <div className="flex justify-center gap-2 mb-6">
             {code.map((digit, index) => (
               <input
                 key={index}
@@ -159,30 +172,32 @@ const EmailVerificationPage = () => {
                 value={digit}
                 onChange={(e) => handleCodeChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
-                className="w-12 h-12 bg-white border border-gray-300 rounded-lg flex items-center justify-center text-2xl font-semibold text-gray-800 shadow-sm text-center"
+                className="w-10 h-12 sm:w-12 sm:h-14 text-center text-2xl font-semibold border border-gray-300 rounded-lg shadow-sm outline-none focus:ring-2 focus:ring-[#2D7A66] bg-white"
                 disabled={isLoading}
               />
             ))}
           </div>
+
           <button
             type="submit"
-            className="w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors disabled:opacity-50"
             disabled={isLoading}
+            className="w-full py-2 sm:py-3 rounded-full bg-[#2D7A66] text-white font-semibold hover:bg-[#204B54] transition-colors disabled:opacity-60"
           >
             {isLoading ? "Verifying..." : "VERIFY"}
           </button>
         </form>
-        <p className="text-gray-600 text-center mt-4">
-          If you didn't receive a code!{" "}
-          <a
-            href="#"
+
+        <p className="text-center text-sm mt-4 text-gray-600">
+          Didn't receive the code?{" "}
+          <button
             onClick={handleResend}
-            className={`text-purple-600 font-semibold hover:underline ${
+            disabled={resendCooldown > 0}
+            className={`font-semibold text-[#2D7A66] hover:underline ${
               resendCooldown > 0 ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
             RESEND {resendCooldown > 0 && `(${resendCooldown}s)`}
-          </a>
+          </button>
         </p>
       </div>
     </div>

@@ -1,7 +1,5 @@
-import { useState, useEffect, useContext } from "react";
+import { useEffect, useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import Cookies from "js-cookie";
 import { toast } from "react-hot-toast";
 
 import DashboardHeader from "../components/Student/Dashboard/DashboardHeader";
@@ -11,79 +9,43 @@ import ContactInfo from "../components/Student/Dashboard/ContactInfo";
 import { AppContext } from "../context/AppContext";
 
 const StudentDashboard = () => {
-  const [studentData, setStudentData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [hasRenderedOnce, setHasRenderedOnce] = useState(false);
   const navigate = useNavigate();
-  const { VITE_BACKEND_BASE_URL, isAuthenticated } = useContext(AppContext);
+  const {
+    user,
+    userType,
+    isAuthenticated,
+    loading: authLoading,
+    logout,
+  } = useContext(AppContext);
 
-  useEffect(() => {
-    const fetchStudentProfile = async () => {
-      try {
-        const token = Cookies.get("authToken");
-
-        if (!VITE_BACKEND_BASE_URL || !token) {
-          throw new Error("Missing backend URL or auth token");
-        }
-
-        const response = await axios.get(
-          `${VITE_BACKEND_BASE_URL}/api/students/profile`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            withCredentials: true,
-          }
-        );
-
-        if (!response.data) {
-          throw new Error("Profile data not found");
-        }
-
-        setStudentData(response.data);
-      } catch (err) {
-        Cookies.remove("authToken");
-        Cookies.remove("user");
-
-        const shouldRedirect =
-          err?.response?.status === 401 ||
-          err?.response?.status === 403 ||
-          err.message?.includes("auth");
-
-        if (shouldRedirect) {
-          navigate("/student/login", {
-            state: { error: "Please log in again" },
-          });
-        } else {
-          setError("Failed to load student profile");
-        }
-      } finally {
-        setLoading(false);
-        setHasRenderedOnce(true);
-      }
-    };
-
-    if (isAuthenticated) {
-      fetchStudentProfile();
-    }
-  }, [VITE_BACKEND_BASE_URL, isAuthenticated, navigate]);
+  console.log("User data in StudentDashboard:", user);
 
   const [error, setError] = useState(null);
+  const [hasRenderedOnce, setHasRenderedOnce] = useState(false);
 
-  // Show error toast only once after render is completed
+  // Redirect if not authenticated as student
   useEffect(() => {
-    if (!loading && hasRenderedOnce) {
-      if (error) {
-        toast.error(error);
-      } else if (!studentData) {
-        toast.error("No student data found.");
+    if (!authLoading) {
+      if (!isAuthenticated || userType !== "student") {
+        navigate("/student/login", {
+          state: { error: "Please log in as a student" },
+        });
+      } else {
+        setHasRenderedOnce(true);
       }
     }
-  }, [loading, hasRenderedOnce, error, studentData]);
+  }, [authLoading, isAuthenticated, userType, navigate]);
+
+  // Show error toast only once after first render
+  useEffect(() => {
+    if (hasRenderedOnce && error) {
+      toast.error(error);
+    }
+  }, [error, hasRenderedOnce]);
 
   return (
-    <div className="relative min-h-screen">
-      {loading && (
+    <div className="relative min-h-screen overflow-x-hidden">
+      {authLoading && (
         <div className="absolute inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-white/60">
           <div className="relative w-36 h-36">
             <div className="w-full h-full border-8 border-[#256357] border-dashed rounded-full animate-spin border-t-transparent"></div>
@@ -99,24 +61,30 @@ const StudentDashboard = () => {
       {/* Main Content with blur on loading */}
       <div
         className={`${
-          loading ? "blur-sm pointer-events-none select-none" : ""
+          authLoading ? "blur-sm pointer-events-none select-none" : ""
         }`}
       >
-        {studentData && (
-          <div className="w-full bg-white mx-auto">
-            <DashboardHeader studentData={studentData} />
+        {user ? (
+          <div className="w-full flex-grow  bg-white mx-auto">
+            <DashboardHeader studentData={user} logout={logout} />
             <main className="w-full px-5 sm:px-14 py-4">
-              <ProfileSection studentData={studentData} />
+              <ProfileSection studentData={user} />
               <div className="w-full h-full flex flex-col lg:flex-row gap-4 items-stretch">
                 <div className="w-full lg:w-[70%]">
-                  <MainContent studentData={studentData} />
+                  <MainContent studentData={user} />
                 </div>
                 <div className="w-full lg:w-[30%]">
-                  <ContactInfo studentData={studentData} />
+                  <ContactInfo studentData={user} />
                 </div>
               </div>
             </main>
           </div>
+        ) : (
+          !authLoading && (
+            <div className="text-center mt-10 text-red-600">
+              No student data available.
+            </div>
+          )
         )}
       </div>
     </div>

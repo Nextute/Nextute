@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Card from "./Card";
+import HorizontalCard from "./HorizontalCard";
 
 const course = [
   { id: 1, name: "JEE" },
@@ -21,15 +22,14 @@ const Ad = () => {
   return (
     <>
       {/* Advertisement Section */}
-      <div className="w-full max-w-7xl px-4 py-8 bg-gray-400 mx-auto rounded-2xl mb-6">
-        <p className="text-black text-4xl md:text-6xl lg:text-8xl text-center font-bold">
-          Advertisement
-        </p>
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8 flex flex-col md:flex-row  gap-4 sm:gap-6 items-center justify-center">
+        <HorizontalCard />
+        <HorizontalCard />
       </div>
 
       {/*------ BROWSE INSTITUTES -----*/}
-      <div className="w-full max-w-7xl mx-auto py-3">
-        <h2 className="text-3xl md:text-4xl font-semibold text-[#002639] mb-6">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-[#002639] mb-6">
           Browse Institutes
         </h2>
 
@@ -38,14 +38,14 @@ const Ad = () => {
             <div
               key={path.id}
               onClick={() => setActivePathId(path.id)}
-              className={`flex-shrink-0 rounded-full px-9 py-3 cursor-pointer transition-colors duration-300 
+              className={`flex-shrink-0 rounded-full px-5 sm:px-6 md:px-8 py-2 sm:py-3  cursor-pointer transition-colors duration-300 
             ${
               activePathId === path.id
                 ? "bg-[#2D7B67] text-white"
                 : "bg-[#F8F7F8] text-[#000000]"
             }`}
             >
-              <p className="text-lg md:text-xl font-medium whitespace-nowrap">
+              <p className="text-base sm:text-lg  font-medium whitespace-nowrap">
                 {path.name}
               </p>
             </div>
@@ -54,12 +54,11 @@ const Ad = () => {
       </div>
 
       {/*-----------COACHING INFORMATION----------*/}
-      <div className="w-full max-w-7xl flex items-center justify-evenly py-3 mx-28 mb-10">
-          <Card />
-          <Card />
-          <Card />
+      <div className="w-full  mx-auto px-4 sm:px-6 md:px-8 flex flex-col sm:flex-row gap-6 sm:gap-6 items-center justify-center space-y-3 mb-10">
+        <Card />
+        <Card />
+        <Card />
       </div>
-      
     </>
   );
 };

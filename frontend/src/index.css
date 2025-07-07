@@ -1,4 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+@import 'leaflet/dist/leaflet.css';
+
 
 @tailwind base;
 @tailwind components;
@@ -8,7 +10,15 @@
 * {
   box-sizing: border-box;
   font-family: Outfit;
+  
 }
+
+html, body {
+  height: 100%;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
 
 @layer utilities {
   /* Base styles for nav links */

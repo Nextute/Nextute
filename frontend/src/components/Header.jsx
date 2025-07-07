@@ -2,6 +2,7 @@ import { FaLocationDot } from "react-icons/fa6";
 import { assets, cities } from "../assets/assets.js";
 import { Search } from "lucide-react";
 import { RectangleIcon } from "./RectangleIcon.jsx";
+import SearchBar from "./SerachBar.jsx";
 
 const Header = () => {
   return (
@@ -17,45 +18,7 @@ const Header = () => {
       </div>
 
       {/* Search Bar */}
-      <div className="flex flex-col h-16 sm:h-20 sm:flex-row items-center justify-between mt-6 sm:mt-10 w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-4xl mx-auto shadow-custom border border-[#000000] rounded-full overflow-hidden">
-        {/* Left: Location Icon + Input */}
-        <div className="flex items-center gap-2 px-6 py-2 w-full mt-3 sm:mt-0">
-          <FaLocationDot className="text-green-700 text-xl sm:text-2xl md:text-3xl" />
-          <input
-            type="text"
-            placeholder="Search by location..."
-            className="outline-none bg-[#FFFFFF] w-full text-gray-700 text-lg sm:text-2xl placeholder-[#000] placeholder-opacity-90 placeholder:text-base sm:placeholder:text-lg md:placeholder:text-xl lg:placeholder:text-2xl"
-          />
-        </div>
-
-        {/* Right: SearchBanner */}
-        <div className="relative h-full w-full flex items-center justify-center px-6 py-2">
-          {/* Background Rectangles */}
-          <div className="relative flex items-center justify-center">
-            {/* First Rectangle (45° rotation) */}
-            <RectangleIcon
-              height={190}
-              width={75}
-              color="#204B55"
-              className="absolute transform rotate-45 translate-x-52 min-md:translate-x-28 z-10 mix-blend-multiply hidden md:block"
-            />
-            {/* Second Rectangle (-45° rotation) */}
-            <RectangleIcon
-              height={160}
-              width={50}
-              color="#AAD294"
-              className="absolute transform -rotate-45 translate-x-52 min-md:translate-x-28 z-10 mix-blend-multiply hidden md:block"
-            />
-            <img
-              src={assets.filter}
-              alt="Filter Icon"
-              className="size-6 translate-x-20 min-md:translate-x-5 cursor-pointer hidden md:block"
-            />
-            {/* Search Icon */}
-            <Search className="absolute translate-x-48 min-md:translate-x-24 size-6 text-white z-50 max-sm:text-[#204B55] max-sm:translate-x-32 max-sm:-top-10" />
-          </div>
-        </div>
-      </div>
+      <SearchBar />
 
       {/* Cities Images */}
       <div className="flex flex-row items-center gap-4 sm:gap-6 mt-8 sm:mt-12 overflow-x-auto scrollbar-hide px-4 w-full max-w-5xl mx-auto">
