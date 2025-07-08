@@ -1,7 +1,7 @@
-import { useEffect, useContext, useState } from "react";
+import { useEffect, useContext, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
-
+import axios from "axios"; // Switched to axios for consistency
 import DashboardHeader from "../components/Student/Dashboard/DashboardHeader";
 import MainContent from "../components/Student/Dashboard/MainContent";
 import ProfileSection from "../components/Student/Dashboard/ProfileSection";
@@ -18,74 +18,144 @@ const StudentDashboard = () => {
     logout,
   } = useContext(AppContext);
 
-  console.log("User data in StudentDashboard:", user);
-
+  const [dashboardData, setDashboardData] = useState(null);
+  const [dataLoading, setDataLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [hasRenderedOnce, setHasRenderedOnce] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
 
-  // Redirect if not authenticated as student
+  const fetchDashboardData = useCallback(
+    async (abortController) => {
+      setDataLoading(true);
+      setError(null);
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_BASE_URL}/api/students/profile`,
+          {
+            withCredentials: true,
+            signal: abortController?.signal,
+          }
+        );
+        if (!response.data) {
+          throw new Error("No dashboard data received.");
+        }
+        setDashboardData(response.data);
+      } catch (err) {
+        if (err.name === "CanceledError") return;
+        if (err.response?.status === 401) {
+          toast.error("Session expired. Please log in again.");
+          logout();
+          navigate("/student/login");
+        } else {
+          setError(err.message || "Failed to load dashboard data.");
+          toast.error(err.message || "Failed to load dashboard data.");
+        }
+      } finally {
+        setDataLoading(false);
+      }
+    },
+    [logout, navigate]
+  );
+
+  const handleLogout = async () => {
+    if (logoutLoading) return;
+    setLogoutLoading(true);
+    try {
+      await logout();
+      toast.success("Logged out successfully");
+      navigate("/student/login");
+    } catch (err) {
+      toast.error("Failed to log out");
+    } finally {
+      setLogoutLoading(false);
+    }
+  };
+
   useEffect(() => {
+    const abortController = new AbortController();
     if (!authLoading) {
-      if (!isAuthenticated || userType !== "student") {
+      if (isAuthenticated && userType === "student" && user) {
+        fetchDashboardData(abortController);
+      } else {
         navigate("/student/login", {
           state: { error: "Please log in as a student" },
         });
-      } else {
-        setHasRenderedOnce(true);
       }
     }
-  }, [authLoading, isAuthenticated, userType, navigate]);
+    return () => abortController.abort();
+  }, [
+    authLoading,
+    isAuthenticated,
+    userType,
+    user,
+    fetchDashboardData,
+    navigate,
+  ]);
 
-  // Show error toast only once after first render
-  useEffect(() => {
-    if (hasRenderedOnce && error) {
-      toast.error(error);
-    }
-  }, [error, hasRenderedOnce]);
+  if (authLoading || dataLoading) {
+    return (
+      <div className="absolute inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-white/60">
+        <div className="relative w-36 h-36">
+          <div className="w-full h-full border-8 border-[#256357] border-dashed rounded-full animate-spin border-t-transparent"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="text-[#256357] font-semibold text-sm sm:text-2xl">
+              Loading...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center mt-10">
+        <p className="text-red-600">{error}</p>
+        <button
+          className="mt-4 px-4 py-2 bg-[#256357] text-white rounded hover:bg-[#1F4C56] transition"
+          onClick={() => fetchDashboardData()}
+          disabled={dataLoading}
+        >
+          {dataLoading ? "Retrying..." : "Retry"}
+        </button>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="text-center mt-10 text-red-600">
+        No student data available. Please log in again.
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
-      {authLoading && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-white/60">
-          <div className="relative w-36 h-36">
-            <div className="w-full h-full border-8 border-[#256357] border-dashed rounded-full animate-spin border-t-transparent"></div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <p className="text-[#256357] font-semibold text-sm sm:text-2xl">
-                Loading...
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main Content with blur on loading */}
       <div
         className={`${
-          authLoading ? "blur-sm pointer-events-none select-none" : ""
+          authLoading || dataLoading
+            ? "blur-sm pointer-events-none select-none"
+            : ""
         }`}
       >
-        {user ? (
-          <div className="w-full flex-grow  bg-white mx-auto">
-            <DashboardHeader studentData={user} logout={logout} />
-            <main className="w-full px-5 sm:px-14 py-4">
-              <ProfileSection studentData={user} />
-              <div className="w-full h-full flex flex-col lg:flex-row gap-4 items-stretch">
-                <div className="w-full lg:w-[70%]">
-                  <MainContent studentData={user} />
-                </div>
-                <div className="w-full lg:w-[30%]">
-                  <ContactInfo studentData={user} />
-                </div>
+        <div className="w-full flex-grow bg-white mx-auto">
+          <DashboardHeader
+            studentData={user}
+            logout={handleLogout}
+            logoutLoading={logoutLoading}
+          />
+          <main className="w-full px-5 sm:px-14 py-4">
+            <ProfileSection studentData={user} />
+            <div className="w-full h-full flex flex-col lg:flex-row gap-4 items-stretch">
+              <div className="w-full lg:w-[70%]">
+                <MainContent studentData={user} dashboardData={dashboardData} />
               </div>
-            </main>
-          </div>
-        ) : (
-          !authLoading && (
-            <div className="text-center mt-10 text-red-600">
-              No student data available.
+              <div className="w-full lg:w-[30%]">
+                <ContactInfo studentData={user} />
+              </div>
             </div>
-          )
-        )}
+          </main>
+        </div>
       </div>
     </div>
   );

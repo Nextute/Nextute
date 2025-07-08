@@ -9,30 +9,33 @@ const AppContextProvider = ({ children }) => {
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const [showEmailVerification, setShowEmailVerification] = useState(false);
-
   const [user, setUser] = useState(null);
   const [userType, setUserType] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [shouldFetchUser, setShouldFetchUser] = useState(false);
+  const [shouldFetchUser, setShouldFetchUser] = useState(true);
 
-  const fetchUser = async () => {
-    setLoading(true); // ✅ loading start here
+  const fetchUser = async (abortController) => {
+    if (!shouldFetchUser) return;
+    setLoading(true);
 
     try {
       const studentRes = await axios.get(
         `${VITE_BACKEND_BASE_URL}/api/students/profile`,
         {
           withCredentials: true,
+          signal: abortController?.signal,
         }
       );
       setUser(studentRes.data);
       setUserType("student");
-    } catch {
+    } catch (error) {
+      if (error.name === "CanceledError") return;
       try {
         const instituteRes = await axios.get(
           `${VITE_BACKEND_BASE_URL}/api/institutes/profile`,
           {
             withCredentials: true,
+            signal: abortController?.signal,
           }
         );
         setUser(instituteRes.data);
@@ -42,32 +45,24 @@ const AppContextProvider = ({ children }) => {
         setUserType(null);
       }
     } finally {
-      setLoading(false); 
+      setLoading(false);
+      setShouldFetchUser(false);
     }
   };
 
-  // Initial load on mount
   useEffect(() => {
-    fetchUser();
-  }, []); 
+    const abortController = new AbortController();
+    fetchUser(abortController);
+    return () => abortController.abort();
+  }, []);
 
-  // Fetch user again only when shouldFetchUser becomes true (e.g. after login)
   useEffect(() => {
     if (shouldFetchUser) {
-      fetchUser();
-      setShouldFetchUser(false);
+      const abortController = new AbortController();
+      fetchUser(abortController);
+      return () => abortController.abort();
     }
   }, [shouldFetchUser]);
-
-  // Optional: Refetch user after login/signup modals close
-  // But only if needed, can be removed if you manage shouldFetchUser correctly
-  /*
-  useEffect(() => {
-    if (!showLogin && !showSignup) {
-      fetchUser();
-    }
-  }, [showLogin, showSignup]);
-  */
 
   const logout = async () => {
     try {
@@ -75,17 +70,13 @@ const AppContextProvider = ({ children }) => {
         await axios.post(
           `${VITE_BACKEND_BASE_URL}/api/students/logout`,
           {},
-          {
-            withCredentials: true,
-          }
+          { withCredentials: true }
         );
       } else if (userType === "institute") {
         await axios.post(
           `${VITE_BACKEND_BASE_URL}/api/institutes/logout`,
           {},
-          {
-            withCredentials: true,
-          }
+          { withCredentials: true }
         );
       }
     } catch (err) {
@@ -96,8 +87,23 @@ const AppContextProvider = ({ children }) => {
       setShowLogin(false);
       setShowSignup(false);
       setShowEmailVerification(false);
+      setShouldFetchUser(false);
     }
   };
+
+  // Axios interceptor for handling 401 errors
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          logout();
+        }
+        return Promise.reject(error);
+      }
+    );
+    return () => axios.interceptors.response.eject(interceptor);
+  }, []);
 
   const value = {
     VITE_BACKEND_BASE_URL,
@@ -115,7 +121,7 @@ const AppContextProvider = ({ children }) => {
     logout,
     loading,
     shouldFetchUser,
-    setShouldFetchUser, // Important: expose this so Login can trigger fetchUser after login
+    setShouldFetchUser,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
