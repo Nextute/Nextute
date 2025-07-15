@@ -8,26 +8,20 @@ import { AppContext } from "../../context/AppContext.jsx";
 import PhoneNumberValidator from "../../context/PhoneNumberValidator.jsx";
 import Cookies from "js-cookie";
 
-// Sanitize input to prevent XSS
 const sanitizeInput = (input) => input.replace(/[<>]/g, "");
 
-// Validate date of birth (must be at least 13 years old)
 const validateDob = (dob) => {
   if (!dob) return "Date of birth is required.";
-
   const birthDate = new Date(dob);
   const today = new Date();
-
   let age = today.getFullYear() - birthDate.getFullYear();
   const monthDiff = today.getMonth() - birthDate.getMonth();
-
   if (
     monthDiff < 0 ||
     (monthDiff === 0 && today.getDate() < birthDate.getDate())
   ) {
     age--;
   }
-
   return age >= 5 ? "" : "You must be at least 5 years old.";
 };
 
@@ -60,11 +54,11 @@ const StudentSignup = () => {
     setUser,
     setUserType,
     setShowSignup,
+    setShouldFetchUser,
   } = useContext(AppContext);
 
   const navigate = useNavigate();
 
-  // Real-time validation
   const validateField = (name, value) => {
     switch (name) {
       case "name":
@@ -124,10 +118,28 @@ const StudentSignup = () => {
     }));
   };
 
+  const resetForm = () => {
+    setName("");
+    setEmail("");
+    setPhoneNumber("");
+    setDateOfBirth("");
+    setGender("");
+    setPassword("");
+    setConfirmPassword("");
+    setErrors({
+      name: "",
+      email: "",
+      phoneNumber: "",
+      dateOfBirth: "",
+      gender: "",
+      password: "",
+      confirmPassword: "",
+    });
+  };
+
   const onSubmitHandler = async (e) => {
     e.preventDefault();
 
-    // Validate fields
     const newErrors = {
       name: validateField("name", name),
       email: validateField("email", email),
@@ -139,14 +151,12 @@ const StudentSignup = () => {
         password !== confirmPassword ? "Passwords do not match." : "",
     };
 
-    // Early return if errors exist
     if (Object.values(newErrors).some(Boolean)) {
       setErrors(newErrors);
       toast.error("Please fix form errors.");
       return;
     }
 
-    // Validate phone number
     const phoneValidation = PhoneNumberValidator(phoneNumber);
     if (!phoneValidation.isValid) {
       setErrors((prev) => ({ ...prev, phoneNumber: phoneValidation.error }));
@@ -186,29 +196,24 @@ const StudentSignup = () => {
         throw new Error(data.message || data.error || "Registration failed.");
       }
 
-      // console.log("frontend", data.token);
-      // console.log("frontend", data.user);
-
-      console.log("Signup successful, token received:", data);
-
-  
-      // Store email and user type for verification flow (using cookies)
       Cookies.set("signupEmail", email, {
         expires: 1,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict",
       });
       Cookies.set("userType", "student", {
         expires: 1,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict",
       });
 
       toast.success("Registration successful! Please verify your email.");
       setUser(data.user);
-      setUserType(data.user?.type || "student");
+      setUserType("student");
       setShowSignup(false);
       setShowEmailVerification(true);
       setShouldFetchUser(true);
       resetForm();
-      localStorage.setItem("verify_email", data.user.email);
-      localStorage.setItem("verify_user_type", "student");
       navigate("/verify");
     } catch (error) {
       console.error("Signup error:", error);

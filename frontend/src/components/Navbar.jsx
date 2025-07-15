@@ -1,30 +1,41 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { assets } from "../assets/assets";
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import { AppContext } from "../context/AppContext";
 import toast from "react-hot-toast";
 
 const Navbar = () => {
-  const { isAuthenticated, setShowLogin, setShowSignup, user, userType, logout } =
-    useContext(AppContext);
-
+  const {
+    isAuthenticated,
+    setShowLogin,
+    setShowSignup,
+    user,
+    userType,
+    logout,
+  } = useContext(AppContext);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const location = useLocation();
 
-  const toggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
-  };
+  useEffect(() => {
+    setIsDropdownOpen(false);
+    setShowMenu(false);
+  }, [location]);
 
   const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
     try {
       await logout();
       toast.success("Logged out successfully");
     } catch (error) {
       console.error("Logout error:", error);
       toast.error("Failed to log out");
+    } finally {
+      setIsLoggingOut(false);
     }
   };
-
 
   return (
     <div className="w-full max-w-[94rem] h-32 mx-auto flex items-center justify-between py-4 px-4 sm:px-8 relative">
@@ -45,7 +56,6 @@ const Navbar = () => {
         >
           <p>Home</p>
         </NavLink>
-
         <NavLink
           to="/about"
           className={({ isActive }) =>
@@ -54,7 +64,6 @@ const Navbar = () => {
         >
           <p>About Us</p>
         </NavLink>
-
         <NavLink
           to="/services"
           className={({ isActive }) =>
@@ -67,8 +76,9 @@ const Navbar = () => {
         {isAuthenticated ? (
           <div className="relative">
             <button
-              onClick={toggleDropdown}
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="flex items-center justify-center w-11 h-11 rounded-full border border-gray-500 hover:bg-gray-100 transition"
+              disabled={isLoggingOut}
             >
               {user?.profilePhoto ? (
                 <img
@@ -107,8 +117,9 @@ const Navbar = () => {
                     handleLogout();
                     setIsDropdownOpen(false);
                   }}
+                  disabled={isLoggingOut}
                 >
-                  Logout
+                  {isLoggingOut ? "Logging out..." : "Logout"}
                 </button>
               </div>
             )}
@@ -137,7 +148,6 @@ const Navbar = () => {
         )}
       </nav>
 
-      {/* Mobile Hamburger Icon */}
       <img
         src={assets.menu_icon}
         alt="menu-icon"
@@ -145,7 +155,6 @@ const Navbar = () => {
         className="w-6 md:hidden cursor-pointer"
       />
 
-      {/* Mobile Menu */}
       <div
         className={`fixed inset-0 z-30 bg-white transition-transform duration-300 md:hidden ${
           showMenu ? "translate-x-0" : "translate-x-full"
@@ -192,8 +201,9 @@ const Navbar = () => {
                   handleLogout();
                   setShowMenu(false);
                 }}
+                disabled={isLoggingOut}
               >
-                Logout
+                {isLoggingOut ? "Logging out..." : "Logout"}
               </button>
             </>
           ) : (

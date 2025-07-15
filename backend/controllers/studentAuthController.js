@@ -10,6 +10,7 @@ import {
 import { handleError } from "../utils/errorHandler.js";
 import { body, validationResult } from "express-validator";
 
+//Singup a new student
 export const signup = [
   body("name").trim().notEmpty().withMessage("Name is required"),
   body("email").isEmail().normalizeEmail().withMessage("Invalid email format"),
@@ -36,19 +37,16 @@ export const signup = [
       return handleError(res, 400, errors.array()[0].msg, "VALIDATION_ERROR");
     }
 
-   
-      const { name, email, password, gender, phoneNumber, dateOfBirth } =
-        req.body;
-        // console.log(name, email, password, gender, phoneNumber, dateOfBirth)
-      const existing = await findStudentByEmail(email);
-        if (existing) {
-          return handleError(res, 400, "Email already exists", "EMAIL_EXISTS");
-        }
+    const { name, email, password, gender, phoneNumber, dateOfBirth } = req.body;
+    const existing = await findStudentByEmail(email);
+    if (existing) {
+      return handleError(res, 400, "Email already exists", "EMAIL_EXISTS");
+    }
+
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-      // console.log("hashedPassword:",hashedPassword,"code:", code, "expiresAt:", expiresAt)
 
       const studentData = {
         name,
@@ -60,22 +58,15 @@ export const signup = [
         code,
         code_expires_at: expiresAt,
       };
-      
 
       const student = await createStudent(studentData);
-      console.log(student)
       const token = createSecretToken(student.id, "student");
-      console.log("Student:",student, "Token:",token)
+      console.log("Signup - Student:", student, "Token:", token); // Debug
+
       res.cookie("authToken", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
-      res.cookie("user", JSON.stringify(student), {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: true, // Always true in production (HTTPS)
+        sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict", // Cross-origin fix
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
@@ -109,6 +100,7 @@ export const signup = [
   },
 ];
 
+// Verify the student's email with the code sent to their email
 export const verifyCode = [
   body("email").isEmail().normalizeEmail().withMessage("Invalid email format"),
   body("code")
@@ -152,6 +144,7 @@ export const verifyCode = [
   },
 ];
 
+// Login student with email or phone number
 export const login = [
   body("email")
     .optional()
@@ -172,7 +165,6 @@ export const login = [
     }
     return true;
   }),
-
 
   async (req, res) => {
     const errors = validationResult(req);
@@ -206,17 +198,12 @@ export const login = [
 
       const { password: _, code, ...safeStudent } = student;
       const token = createSecretToken(student.id, "student");
+      console.log("Login - Student:", safeStudent, "Token:", token); // Debug
 
       res.cookie("authToken", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
-      res.cookie("user", JSON.stringify(safeStudent), {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: true, // Always true in production
+        sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict", // Cross-origin fix
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
@@ -233,9 +220,11 @@ export const login = [
   },
 ];
 
+// Get the student's profile
 export const getStudentProfile = async (req, res) => {
   try {
     const student = req.student;
+    console.log("Profile - Student:", student); // Debug
 
     if (!student) {
       return handleError(res, 404, "Student not found", "STUDENT_NOT_FOUND");
@@ -252,19 +241,15 @@ export const getStudentProfile = async (req, res) => {
   }
 };
 
+// Logout student
 export const logout = async (req, res) => {
   try {
-    console.log("Logout request received", req.cookies);
+    console.log("Logout request received", req.cookies); // Debug
     res.clearCookie("authToken", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: true,
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
     });
-    // res.clearCookie("user", {
-    //   httpOnly: false,
-    //   secure: process.env.NODE_ENV === "production",
-    //   sameSite: "strict",
-    // });
     return res.status(200).json({ status: true, message: "Logout successful" });
   } catch (err) {
     console.error("Logout error:", err);

@@ -82,6 +82,12 @@ const StudentLogin = () => {
     }
   };
 
+  const resetForm = () => {
+    setLoginInput("");
+    setPassword("");
+    setErrors({ loginInput: "", password: "" });
+  };
+
   const onSubmitHandler = async (e) => {
     e.preventDefault();
     const sanitizedLoginInput = sanitizeInput(loginInput.trim());
@@ -89,7 +95,6 @@ const StudentLogin = () => {
 
     const isEmail = sanitizedLoginInput.includes("@");
 
-    // Validations
     if (!sanitizedLoginInput || !sanitizedPassword) {
       setErrors({
         loginInput: sanitizedLoginInput
@@ -100,12 +105,12 @@ const StudentLogin = () => {
       return toast.error("Please fill in all fields.");
     }
 
-    if (sanitizedPassword.length < 6) {
+    if (sanitizedPassword.length < 8) {
       setErrors((prev) => ({
         ...prev,
-        password: "Password must be at least 6 characters.",
+        password: "Password must be at least 8 characters.",
       }));
-      return toast.error("Password must be at least 6 characters.");
+      return toast.error("Password must be at least 8 characters.");
     }
 
     const payload = isEmail
@@ -118,10 +123,8 @@ const StudentLogin = () => {
         `${VITE_BACKEND_BASE_URL}/api/students/auth/login`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include", // important to send cookies
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify(payload),
         }
       );
@@ -129,22 +132,21 @@ const StudentLogin = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        console.error("Login error response:", data);
-        return toast.error(
+        throw new Error(
           data.message || "Login failed. Please check credentials."
         );
       }
 
-
       toast.success("Login successful!");
       setUser(data.user);
-      setUserType(data.user?.type || "student");
+      setUserType("student");
       setShouldFetchUser(true);
       setShowLogin(false);
+      resetForm();
       navigate("/");
     } catch (error) {
-      console.error("Login failed:", error);
-      toast.error("Something went wrong. Please try again.");
+      console.error("Login error:", error);
+      toast.error(error.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }

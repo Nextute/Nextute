@@ -43,10 +43,10 @@ export const handleImageUpload = async (req, res) => {
       return handleError(res, 400, "No image file provided", "NO_IMAGE");
     }
 
-    logger.info("Image uploaded successfully", {
-      url: req.file.path,
-      instituteId: req.institute?.id || "unknown",
-    });
+    // logger.info("Image uploaded successfully", {
+    //   url: req.file.path,
+    //   instituteId: req.institute?.id || "unknown",
+    // });
 
     return res.status(200).json({
       status: true,
@@ -116,5 +116,32 @@ export const handleVideoUpload = async (req, res) => {
       "Server error during video upload",
       "VIDEO_UPLOAD_ERROR"
     );
+  }
+};
+
+
+export const uploadDocumentsHandler = async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No document files uploaded",
+      });
+    }
+
+    const documentUrls = req.files.map((file) => file.path);
+
+    return res.status(200).json({
+      success: true,
+      message: "Documents uploaded successfully",
+      urls: documentUrls,
+    });
+  } catch (error) {
+    console.error("Document upload error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to upload documents",
+      error: error.message,
+    });
   }
 };

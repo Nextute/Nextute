@@ -20,6 +20,15 @@ const videoStorage = new CloudinaryStorage({
   },
 });
 
+const documentStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "nextute/documents",
+    allowed_formats: ["pdf", "jpg", "jpeg", "png"],
+    resource_type: "raw", // important for non-image files
+  },
+});
+
 const uploadImage = multer({
   storage: imageStorage,
   limits: { fileSize: 5 * 1024 * 1024 },
@@ -46,4 +55,28 @@ const uploadVideo = multer({
   },
 });
 
-export { uploadImage, uploadVideo };
+const documentUpload = multer({
+  storage: documentStorage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = [
+      "application/pdf",
+
+      "image/png",
+      "image/jpg",
+      "image/jpeg",
+    ];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(
+        new Error("Invalid file type. Only PDF, PNG, JPG, JPEG are allowed"),
+        false
+      );
+    }
+  },
+}).array("documents", 5);
+
+export { uploadImage, uploadVideo, documentUpload };
