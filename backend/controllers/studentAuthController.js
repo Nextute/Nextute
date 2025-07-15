@@ -10,6 +10,7 @@ import {
 import { handleError } from "../utils/errorHandler.js";
 import { body, validationResult } from "express-validator";
 
+//Singup a new student
 export const signup = [
   body("name").trim().notEmpty().withMessage("Name is required"),
   body("email").isEmail().normalizeEmail().withMessage("Invalid email format"),
@@ -99,6 +100,7 @@ export const signup = [
   },
 ];
 
+// Verify the student's email with the code sent to their email
 export const verifyCode = [
   body("email").isEmail().normalizeEmail().withMessage("Invalid email format"),
   body("code")
@@ -142,6 +144,7 @@ export const verifyCode = [
   },
 ];
 
+// Login student with email or phone number
 export const login = [
   body("email")
     .optional()
@@ -217,6 +220,7 @@ export const login = [
   },
 ];
 
+// Get the student's profile
 export const getStudentProfile = async (req, res) => {
   try {
     const student = req.student;
@@ -237,6 +241,7 @@ export const getStudentProfile = async (req, res) => {
   }
 };
 
+// Logout student
 export const logout = async (req, res) => {
   try {
     console.log("Logout request received", req.cookies); // Debug
