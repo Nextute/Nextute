@@ -6,13 +6,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
-@import "tailwindcss";
 
-@theme {
-  --color-lightgreen: #2d7a66;
-  --color-darkgreen: #204b54;
-}
 * {
   box-sizing: border-box;
   font-family: Outfit;
@@ -50,81 +44,3 @@ html, body {
 ::-webkit-scrollbar {
     @apply hidden
 }
-
-:root {
-  font-family: "Outfit", sans-serif;
-}
-
-.shape-1 {
-  width: 280px;
-  height: 300px;
-  border: 1px solid black;
-  border-radius: 15%;
-  background-color: white;
-  transform: skew(-5deg, 20deg);
-  position: relative;
-  z-index: 2;
-}
-
-.shadow-shape-1 {
-  width: 280px;
-  height: 300px;
-  border-radius: 15%;
-  background-color: var(--color-lightgreen);
-  position: absolute;
-  transform: skew(-10deg, 25deg);
-  top: 20px;
-  left: -15px;
-  z-index: 1;
-}
-
-.shape-2 {
-  width: 350px;
-  height: 450px;
-  border: 1px solid black;
-  border-radius: 15%;
-  background-color: white;
-  transform: skewY(-5deg) perspective(800px) rotateX(30deg);
-  position: relative;
-  z-index: 2;
-}
-
-.shadow-shape-2 {
-  width: 300px;
-  height: 450px;
-  border-radius: 15%;
-  background-color: var(--color-lightgreen);
-  position: absolute;
-  transform: skewX(10deg) perspective(800px) rotateX(30deg);
-  top: -3px;
-  left: 30px;
-  z-index: 1;
-}
-
-.shape-3 {
-  width: 280px;
-  height: 300px;
-  border: 1px solid black;
-  border-radius: 15%;
-  background-color: white;
-  transform: skew(-2deg, -20deg);
-  position: relative;
-  z-index: 2;
-}
-
-.shadow-shape-3 {
-  width: 280px;
-  height: 300px;
-  border-radius: 15%;
-  background-color: var(--color-lightgreen);
-  position: absolute;
-  transform: skew(5deg, -25deg);
-  top: 20px;
-  left: 15px;
-  z-index: 1;
-}
-
-/* 
-*{
-  outline: 1px solid red;
-} */

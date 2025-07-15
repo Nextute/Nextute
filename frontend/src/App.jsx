@@ -32,6 +32,8 @@ import ReviewPage from "./pages/ReviewPage";
 import FAQPage from "./pages/FAQPage";
 import BlogPage from "./pages/BlogPage";
 import InstituteOverviewPage from "./pages/InstituteRegistration/InstituteOverviewPage";
+import ServicesPage from "./pages/ServicesPage";
+import InstitutesList from "./components/InstitutesList ";
 
 const App = () => {
   const { setShowSignup, setShowLogin, isAuthenticated } =
@@ -50,6 +52,8 @@ const App = () => {
         <Route path="/review" element={<ReviewPage />} />
         <Route path="/faq" element={<FAQPage />} />
         <Route path="/blog" element={<BlogPage />} />
+        <Route path="/services" element={<ServicesPage />} />
+        <Route path="/institutes-data" element={<InstitutesList />} />
 
         <Route
           path="/institutes-on-location"

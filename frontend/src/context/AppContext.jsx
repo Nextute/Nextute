@@ -13,6 +13,8 @@ const AppContextProvider = ({ children }) => {
   const [userType, setUserType] = useState(null);
   const [loading, setLoading] = useState(true);
   const [shouldFetchUser, setShouldFetchUser] = useState(true);
+  const [institutes, setInstitutes] = useState([]);
+  const [institutesLoaded, setInstitutesLoaded] = useState(false);
 
   const fetchUser = async (abortController) => {
     if (!shouldFetchUser) return;
@@ -26,6 +28,8 @@ const AppContextProvider = ({ children }) => {
           signal: abortController?.signal,
         }
       );
+      console.log("Student profile fetched:", studentRes.data);
+
       setUser(studentRes.data);
       setUserType("student");
     } catch (error) {
@@ -38,6 +42,7 @@ const AppContextProvider = ({ children }) => {
             signal: abortController?.signal,
           }
         );
+        console.log("Institute profile fetched:", instituteRes.data);
         setUser(instituteRes.data);
         setUserType("institute");
       } catch {
@@ -122,6 +127,10 @@ const AppContextProvider = ({ children }) => {
     loading,
     shouldFetchUser,
     setShouldFetchUser,
+    institutes,
+    setInstitutes,
+    institutesLoaded,
+    setInstitutesLoaded,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

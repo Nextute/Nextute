@@ -7,7 +7,8 @@ import Cookies from "js-cookie";
 import RegistrationNavigation from "../../components/Institute/RegistrationNavigation";
 import MapSelector from "../../components/MapSelector";
 
-// Validation rules
+axios.defaults.withCredentials = true;
+
 const VALIDATION_RULES = {
   headOffice: {
     address: { required: true, message: "Head Office address is required" },
@@ -19,7 +20,7 @@ const VALIDATION_RULES = {
         /^\d{6}$/.test(value) || "Valid 6-digit Pin Code is required",
     },
     landmark: { required: false },
-    // location: { required: true, message: "Head Office location is required" },
+    location: { required: false }, // Adjust if location is required
   },
   branch: {
     address: {
@@ -52,18 +53,11 @@ const VALIDATION_RULES = {
           : true,
     },
     landmark: { required: false },
-    // location: {
-    //   required: false,
-    //   validate: (value, formData) =>
-    //     !value && Object.values(formData.branch).some((v) => v.trim())
-    //       ? "Branch location is required if any branch field is provided"
-    //       : true,
-    // },
+    location: { required: false }, // Adjust if location is required
   },
 };
 
 const LOCAL_STORAGE_KEY = "instituteContactForm";
-const PROGRESS_KEY = "instituteProgress";
 
 const ContactPage = () => {
   const defaultFormData = {
@@ -88,54 +82,101 @@ const ContactPage = () => {
   const [formData, setFormData] = useState(defaultFormData);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isEditing, setIsEditing] = useState(true); // Start in edit mode by default
+  const [isEditing, setIsEditing] = useState(true);
   const { VITE_BACKEND_BASE_URL } = useContext(AppContext);
   const navigate = useNavigate();
 
-  // Load data from localStorage on mount
+  // Fetch saved data from backend or localStorage on mount
   useEffect(() => {
-    console.log("Component mounted, checking localStorage...");
-    const savedFormData = localStorage.getItem(LOCAL_STORAGE_KEY);
-    const progress = localStorage.getItem(PROGRESS_KEY);
-
-    if (savedFormData) {
+    const fetchContactData = async () => {
       try {
-        const parsed = JSON.parse(savedFormData);
-        console.log("Retrieved form data from localStorage:", parsed);
-        setFormData({
-          ...defaultFormData,
-          ...parsed,
-          headOffice: {
-            ...defaultFormData.headOffice,
-            ...parsed.headOffice,
-          },
-          branch: {
-            ...defaultFormData.branch,
-            ...parsed.branch,
-          },
-        });
-        // Set isEditing to false only if user has progressed to /institute/courses
-        if (progress === "courses") {
-          console.log("User navigated back from courses, disabling edit mode");
-          setIsEditing(false);
+        const response = await axios.get(
+          `${VITE_BACKEND_BASE_URL}/api/institutes/profile`
+        );
+
+        console.log("Fetched contact data:", response.data);
+        console.log("Fetched contact page data:", response.data.data.contact_details);
+        
+        if (response.status === 200 && response.data.data.contact_details) {
+          const savedData = JSON.parse(response.data.data.contact_details);
+          setFormData({
+            ...defaultFormData,
+            ...savedData,
+            headOffice: {
+              ...defaultFormData.headOffice,
+              ...savedData.headOffice,
+            },
+            branch: { ...defaultFormData.branch, ...savedData.branch },
+          });
+          setIsEditing(false); // Set to read-only if data exists
+        } else {
+          // Fallback to localStorage if backend has no data
+          const savedFormData = localStorage.getItem(LOCAL_STORAGE_KEY);
+          if (savedFormData) {
+            try {
+              const parsed = JSON.parse(savedFormData);
+              setFormData({
+                ...defaultFormData,
+                ...parsed,
+                headOffice: {
+                  ...defaultFormData.headOffice,
+                  ...parsed.headOffice,
+                },
+                branch: { ...defaultFormData.branch, ...parsed.branch },
+              });
+              setIsEditing(true); // Allow editing if using localStorage data
+            } catch (e) {
+              console.error("Invalid localStorage data:", e);
+              setFormData(defaultFormData);
+              setIsEditing(true);
+            }
+          } else {
+            console.log("No saved contact data, starting fresh");
+            setFormData(defaultFormData);
+            setIsEditing(true);
+          }
         }
-      } catch (e) {
-        console.error("Failed to parse saved form data from localStorage:", e);
-        setFormData(defaultFormData);
+      } catch (err) {
+        console.error("Failed to fetch contact data:", err);
+        // Fallback to localStorage on fetch failure
+        const savedFormData = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (savedFormData) {
+          try {
+            const parsed = JSON.parse(savedFormData);
+            setFormData({
+              ...defaultFormData,
+              ...parsed,
+              headOffice: {
+                ...defaultFormData.headOffice,
+                ...parsed.headOffice,
+              },
+              branch: { ...defaultFormData.branch, ...parsed.branch },
+            });
+            setIsEditing(true);
+          } catch (e) {
+            console.error("Invalid localStorage data:", e);
+            setFormData(defaultFormData);
+            setIsEditing(true);
+          }
+        } else {
+          setFormData(defaultFormData);
+          setIsEditing(true);
+        }
       }
-    } else {
-      console.log("No form data found in localStorage");
-    }
-  }, []);
+    };
 
-  // Save formData to localStorage whenever it changes
+    fetchContactData();
+  }, [VITE_BACKEND_BASE_URL]);
+
+  // Save formData to localStorage only when editing
   useEffect(() => {
-    console.log("Saving form data to localStorage:", formData);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(formData));
-  }, [formData]);
+    if (isEditing) {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(formData));
+    }
+  }, [formData, isEditing]);
 
+  // Validate form fields
   const validateForm = useCallback(() => {
-    console.log("Form data before validation:", formData); // Debug formData
     const newErrors = {};
 
     Object.entries(VALIDATION_RULES.headOffice).forEach(([key, rule]) => {
@@ -157,13 +198,12 @@ const ContactPage = () => {
     }
 
     setErrors(newErrors);
-    console.log("Validation errors:", newErrors);
     return Object.keys(newErrors).length === 0;
   }, [formData]);
 
+  // Handle input changes
   const handleInputChange = useCallback((e, section) => {
     const { name, value } = e.target;
-    console.log(`Input changed: ${section}.${name} = ${value}`);
     setFormData((prev) => ({
       ...prev,
       [section]: { ...prev[section], [name]: value },
@@ -171,20 +211,15 @@ const ContactPage = () => {
     setErrors((prev) => ({ ...prev, [`${section}${name}`]: undefined }));
   }, []);
 
+  // Handle form submission
   const handleSubmit = useCallback(
     async (e) => {
       e.preventDefault();
-      console.log("Attempting form submission..."); // Debug submission start
-      if (!validateForm() || isSubmitting) {
-        console.log("Form validation failed or already submitting");
-        return;
-      }
-
+      if (!validateForm() || isSubmitting) return;
       setIsSubmitting(true);
-      console.log("Submission started, isSubmitting set to true");
+
       try {
         const token = Cookies.get("authToken");
-        console.log("Submitting form data to API:", formData);
         const response = await axios.patch(
           `${VITE_BACKEND_BASE_URL}/api/institutes/me/contact`,
           formData,
@@ -196,11 +231,11 @@ const ContactPage = () => {
           }
         );
 
+        console.log("Data sent successfully:", formData);
+
         if (response.status === 200) {
-          console.log(
-            "Form submitted successfully, navigating to courses page"
-          );
-          localStorage.setItem(PROGRESS_KEY, "courses");
+          localStorage.removeItem(LOCAL_STORAGE_KEY); // Clear localStorage on success
+          setIsEditing(false); // Switch to read-only mode
           navigate("/institute/courses");
         }
       } catch (error) {
@@ -210,17 +245,17 @@ const ContactPage = () => {
         });
       } finally {
         setIsSubmitting(false);
-        console.log("Submission ended, isSubmitting set to false");
       }
     },
     [formData, isSubmitting, navigate, validateForm, VITE_BACKEND_BASE_URL]
   );
 
+  // Handle edit button click
   const handleEditClick = useCallback(() => {
-    console.log("Edit button clicked, enabling form");
     setIsEditing(true);
   }, []);
 
+  // Render address section
   const renderAddressSection = (section, title) => (
     <div className="bg-white border border-gray-300 col-span-6 rounded-xl p-4">
       <label className="text-gray-800 text-lg px-4 font-semibold mb-2 block">
@@ -228,7 +263,9 @@ const ContactPage = () => {
       </label>
       <textarea
         rows={3}
-        className="w-full text-gray-900 text-base border-none px-4 py-2 outline-none focus:ring-2 focus:ring-[#2D7A66] rounded resize-none"
+        className={`w-full text-gray-900 text-base border-none px-4 py-2 outline-none focus:ring-2 focus:ring-[#2D7A66] rounded resize-none ${
+          isEditing ? "bg-gray-200" : "bg-gray-50"
+        }`}
         name="address"
         placeholder="Full address"
         value={formData[section].address}
@@ -253,7 +290,9 @@ const ContactPage = () => {
                   ? "Pin Code"
                   : field.charAt(0).toUpperCase() + field.slice(1)
               }
-              className="w-full text-gray-900 text-base px-4 py-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#2D7A66]"
+              className={`w-full text-gray-900 text-base px-4 py-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#2D7A66] ${
+                isEditing ? "bg-gray-200" : "bg-gray-50"
+              }`}
               disabled={!isEditing}
             />
             {errors[`${section}${field}`] && (
@@ -270,8 +309,6 @@ const ContactPage = () => {
   return (
     <div className="min-h-screen p-5 bg-[#E4EEE3]">
       <RegistrationNavigation />
-
-      {/* Form Section */}
       <form
         onSubmit={handleSubmit}
         className="grid grid-cols-1 sm:grid-cols-6 gap-3 space-y-3 bg-white border border-gray-300 rounded-3xl shadow-lg px-3 py-4"
@@ -284,8 +321,7 @@ const ContactPage = () => {
           <MapSelector
             position={formData.headOffice.location}
             setPosition={(pos) => {
-              if (!isEditing) return; // Prevent updates when not editing
-              console.log(`Setting headOffice location: ${pos}`); // Debug MapSelector
+              if (!isEditing) return;
               setFormData((prev) => ({
                 ...prev,
                 headOffice: { ...prev.headOffice, location: pos },
@@ -312,8 +348,7 @@ const ContactPage = () => {
           <MapSelector
             position={formData.branch.location}
             setPosition={(pos) => {
-              if (!isEditing) return; // Prevent updates when not editing
-              console.log(`Setting branch location: ${pos}`); // Debug MapSelector
+              if (!isEditing) return;
               setFormData((prev) => ({
                 ...prev,
                 branch: { ...prev.branch, location: pos },
@@ -331,7 +366,6 @@ const ContactPage = () => {
         </div>
       </form>
 
-      {/* Navigation */}
       <div className="flex justify-between items-center p-4 mt-4">
         <button
           type="button"
@@ -345,7 +379,7 @@ const ContactPage = () => {
           <button
             type="button"
             onClick={handleEditClick}
-           className="flex items-center px-6 py-2 rounded-full text-white font-medium bg-[#204B54] hover:bg-[#2D7B67] transition"
+            className="flex items-center px-6 py-2 rounded-full text-white font-medium bg-[#204B54] hover:bg-[#2D7B67] transition"
           >
             Edit
           </button>

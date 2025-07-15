@@ -214,6 +214,9 @@ const StudentSignup = () => {
       setShowEmailVerification(true);
       setShouldFetchUser(true);
       resetForm();
+      localStorage.setItem("verify_email", data.user.email);
+      localStorage.setItem("verify_user_type", "student");
+
       navigate("/verify");
     } catch (error) {
       console.error("Signup error:", error);
