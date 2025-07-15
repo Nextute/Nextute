@@ -7,10 +7,12 @@ import {
   findInstituteByEmail,
   findInstituteByPhone,
   verifyInstitute,
+  getAllInstitutes,
 } from "../models/instituteModel.js";
 import { handleError } from "../utils/errorHandler.js";
 import { body, param, validationResult } from "express-validator";
 
+// Signup a new institute
 export const signup = [
   body("institute_name")
     .trim()
@@ -53,17 +55,18 @@ export const signup = [
 
       const institute = await createInstitute(instituteData);
       const token = createSecretToken(institute.id, "institute");
+      console.log("Signup - Insitute:", institute, "Token:", token); // Debug
 
       res.cookie("authToken", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: true,
+        sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
       res.cookie("user", JSON.stringify(institute), {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        httpOnly: true,
+        secure: true, // Always true in production (HTTPS)
+        sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict", // Cross-origin fix
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
@@ -97,6 +100,7 @@ export const signup = [
   },
 ];
 
+// Verify the institute's email with the code sent to their email
 export const verifyCode = [
   body("email").isEmail().normalizeEmail().withMessage("Invalid email format"),
   body("code")
@@ -140,6 +144,68 @@ export const verifyCode = [
   },
 ];
 
+// Resend verification code to the institute's email
+export const resendVerificationCode = [
+  body("email").isEmail().normalizeEmail().withMessage("Invalid email format"),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      console.log("DEBUG: Resend validation error:", errors.array());
+      return handleError(res, 400, errors.array()[0].msg, "VALIDATION_ERROR");
+    }
+
+    try {
+      const { email } = req.body;
+      console.log("DEBUG: Resending verification code for:", email);
+
+      const institute = await findInstituteByEmail(email);
+      if (!institute) {
+        console.log("DEBUG: Institute not found for email:", email);
+        return handleError(
+          res,
+          404,
+          "Institute not found",
+          "INSTITUTE_NOT_FOUND"
+        );
+      }
+
+      if (institute.is_verified) {
+        console.log("DEBUG: Email already verified for:", email);
+        return handleError(
+          res,
+          400,
+          "Email already verified",
+          "ALREADY_VERIFIED"
+        );
+      }
+
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+      await updateInstituteSection(institute.id, "code", code);
+      await updateInstituteSection(institute.id, "code_expires_at", expiresAt);
+
+      console.log("DEBUG: Generated new code:", code, "Expires at:", expiresAt);
+
+      try {
+        await sendVerificationEmail(email, code);
+        console.log("DEBUG: Verification email sent to:", email);
+        return res.status(200).json({
+          status: true,
+          message: "Verification code resent",
+        });
+      } catch (emailErr) {
+        console.error("DEBUG: Email sending error:", emailErr);
+        return handleError(res, 500, "Failed to send email", "EMAIL_ERROR");
+      }
+    } catch (err) {
+      console.error("DEBUG: Resend error:", err);
+      return handleError(res, 500, "Server error", "RESEND_ERROR");
+    }
+  },
+];
+
+// Login an institute
 export const login = [
   body("email")
     .optional()
@@ -200,14 +266,14 @@ export const login = [
 
       res.cookie("authToken", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: true,
+        sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
       res.cookie("user", JSON.stringify(safeInstitute), {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        httpOnly: true,
+        secure: true,
+        sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
@@ -225,59 +291,100 @@ export const login = [
 ];
 
 export const updateProfileSection = [
+  // Validate section parameter to match model's validSections
   param("section")
     .isIn([
       "basic-info",
       "contact",
+      "courses",
       "faculties",
-      "social-media",
       "student-achievements",
       "institute-achievements",
+      "facilities",
+      "social-media",
       "media",
     ])
     .withMessage("Invalid section"),
+
+  // Ensure body is not empty
   body().notEmpty().withMessage("Data is required"),
-  body("media")
-    .optional()
-    .isArray()
-    .withMessage("Media must be an array")
-    .custom((value) => {
-      if (value) {
-        return value.every((item) => item.classroomPhoto && item.demoVideo);
+
+  // Section-specific validations
+  body().custom((value, { req }) => {
+    const { section } = req.params;
+    console.log("REQ BODY:", JSON.stringify(req.body, null, 2));
+    console.log("REQ PARAMS:", req.params);
+
+    if (section === "basic-info") {
+      if (!value.institute_name) {
+        throw new Error("Institute name is required");
       }
-      return true;
-    })
-    .withMessage("Each media set must include classroomPhoto and demoVideo"),
+    }
+
+    if (section === "media") {
+      if (
+        typeof value !== "object" ||
+        !Array.isArray(value.classroomImages) ||
+        !Array.isArray(value.demoVideos) ||
+        !Array.isArray(value.tourVideos)
+      ) {
+        throw new Error(
+          "Media must include classroomImages, demoVideos, and tourVideos as arrays"
+        );
+      }
+    }
+
+    return true;
+  }),
+
+  // Controller logic
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log("🔴 VALIDATION ERRORS:", errors.array());
       return handleError(res, 400, errors.array()[0].msg, "VALIDATION_ERROR");
     }
 
     try {
       const { section } = req.params;
       const data = req.body;
+      const instituteId = req.institute?.id;
+
+      if (!instituteId) {
+        return handleError(
+          res,
+          401,
+          "Unauthorized: Institute ID missing",
+          "AUTH_ERROR"
+        );
+      }
 
       const sectionMap = {
         "basic-info": "basic_info",
         contact: "contact_details",
+        courses: "courses",
         faculties: "faculty_details",
-        "social-media": "social_media",
         "student-achievements": "student_achievements",
         "institute-achievements": "institute_achievements",
+        facilities: "facilities",
+        "social-media": "social_media",
         media: "media_gallery",
       };
 
       const column = sectionMap[section];
-      const jsonData = JSON.stringify(data);
 
-      const updatedInstitute = await updateInstituteSection(
-        req.institute.id,
+      console.log(
+        `DEBUG: Updating section "${section}" for instituteId: ${instituteId}`
+      );
+      console.log("Payload:", data);
+
+      const institute = await updateInstituteSection(
+        instituteId,
         column,
-        jsonData
+        JSON.stringify(data)
       );
 
-      if (!updatedInstitute) {
+      if (!institute) {
         return handleError(
           res,
           404,
@@ -286,8 +393,14 @@ export const updateProfileSection = [
         );
       }
 
-      const { password, code, ...safeInstitute } = updatedInstitute;
-      return res.status(200).json({ status: true, data: safeInstitute });
+      // Remove sensitive fields
+      const { password, code, ...safeInstitute } = institute;
+
+      return res.status(200).json({
+        status: true,
+        data: safeInstitute,
+        message: `${section} saved successfully`,
+      });
     } catch (err) {
       console.error("Profile update error:", err);
       return handleError(
@@ -325,17 +438,37 @@ export const logout = async (req, res) => {
   try {
     res.clearCookie("authToken", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: true,
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
     });
     res.clearCookie("user", {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      httpOnly: true,
+      secure: true,
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
     });
     return res.status(200).json({ status: true, message: "Logout successful" });
   } catch (err) {
     console.error("Logout error:", err);
     return handleError(res, 500, "Server error during logout", "LOGOUT_ERROR");
+  }
+};
+
+// Fetch all institutes (excluding sensitive fields)
+export const getAllInstitutesData = async (req, res) => {
+  try {
+    const institutes = await getAllInstitutes();
+    const safeInstitutes = institutes.map(
+      ({ password, code, ...rest }) => rest
+    );
+
+    return res.status(200).json({ status: true, data: safeInstitutes });
+  } catch (err) {
+    console.error("Get all institutes error:", err);
+    return handleError(
+      res,
+      500,
+      "Failed to fetch institutes",
+      "INSTITUTES_FETCH_ERROR"
+    );
   }
 };

@@ -65,6 +65,18 @@ const isInstituteIdUnique = async (institute_id) => {
   return !institute;
 };
 
+const findInstituteById = async (id) => {
+  return await prisma.institute.findUnique({
+    where: { id },
+  });
+};
+
+const getAllInstitutes = async () => {
+  const allInstitutes = await prisma.institute.findMany();
+  return allInstitutes;
+};
+
+
 export {
   createInstitute,
   updateInstituteSection,
@@ -72,4 +84,6 @@ export {
   findInstituteByPhone,
   verifyInstitute,
   isInstituteIdUnique,
+  findInstituteById,
+  getAllInstitutes,
 };
