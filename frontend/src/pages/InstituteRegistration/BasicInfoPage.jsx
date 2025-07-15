@@ -1,16 +1,18 @@
-import { useState, useRef, useContext, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiUpload } from "react-icons/fi";
 import { AppContext } from "../../context/AppContext";
 import axios from "axios";
-import Cookies from "js-cookie";
 import RegistrationNavigation from "../../components/Institute/RegistrationNavigation";
 import { MdDelete } from "react-icons/md";
 import { FaArrowRight } from "react-icons/fa";
 
+// Set axios defaults to include credentials (cookies)
+axios.defaults.withCredentials = true;
+
 // Constants for validation
 const VALIDATION_RULES = {
-  name: { required: true, message: "Institute name is required" },
+  institute_name: { required: true, message: "Institute name is required" },
   description: { required: true, message: "Description is required" },
   motto: { required: true, message: "Motto/Tagline is required" },
   establishedYear: {
@@ -44,7 +46,7 @@ const LOCAL_STORAGE_LOGO_KEY = "instituteLogoPreview";
 
 const BasicInfoPage = () => {
   const defaultFormData = {
-    name: "",
+    institute_name: "",
     description: "",
     logo: "",
     motto: "",
@@ -58,62 +60,66 @@ const BasicInfoPage = () => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLogoUploading, setIsLogoUploading] = useState(false);
-  const [isEditing, setIsEditing] = useState(true); // Start in edit mode by default
+  const [isEditing, setIsEditing] = useState(true);
   const fileInputRef = useRef(null);
   const { VITE_BACKEND_BASE_URL } = useContext(AppContext);
   const navigate = useNavigate();
 
-  // Load data from localStorage on mount
+  // Fetch saved data from backend on mount
   useEffect(() => {
-    const savedFormData = localStorage.getItem(LOCAL_STORAGE_KEY);
-    const savedLogo = localStorage.getItem(LOCAL_STORAGE_LOGO_KEY);
-
-    if (savedFormData) {
+    const fetchSavedData = async () => {
       try {
-        const parsed = JSON.parse(savedFormData);
-        setFormData({
-          ...defaultFormData,
-          ...parsed,
-          medium: typeof parsed.medium === "string" ? parsed.medium : "",
-          exams: Array.isArray(parsed.exams) ? parsed.exams : [],
-        });
-        // Use formData.logo for preview if available
-        if (parsed.logo) {
-          console.log("Using formData.logo for preview:", parsed.logo);
-          setLogoPreview(parsed.logo);
-        } else if (savedLogo) {
-          console.log("Using saved logo preview from localStorage:", savedLogo);
-          setLogoPreview(savedLogo);
+        const response = await axios.get(
+          `${VITE_BACKEND_BASE_URL}/api/institutes/profile`
+        );
+
+        if (response.status === 200 && response.data.data.basic_info) {
+          const savedData = JSON.parse(response.data.data.basic_info);
+          setFormData({
+            ...defaultFormData,
+            ...savedData,
+            medium:
+              typeof savedData.medium === "string" ? savedData.medium : "",
+            exams: Array.isArray(savedData.exams) ? savedData.exams : [],
+          });
+          setLogoPreview(savedData.logo || null);
+          setIsEditing(false); // Read-only mode for saved data
         } else {
-          console.log("No logo preview found in localStorage");
+          console.log("No saved basic_info, starting fresh");
+          localStorage.removeItem(LOCAL_STORAGE_KEY);
+          localStorage.removeItem(LOCAL_STORAGE_LOGO_KEY);
+          setFormData(defaultFormData);
+          setLogoPreview(null);
+          setIsEditing(true);
         }
-        // Disable editing if saved data exists (navigated back)
-        setIsEditing(false);
-      } catch (e) {
-        console.error("Failed to parse saved form data from localStorage:", e);
+      } catch (error) {
+        console.error("Failed to fetch saved data:", error);
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
+        localStorage.removeItem(LOCAL_STORAGE_LOGO_KEY);
         setFormData(defaultFormData);
+        setLogoPreview(null);
+        setIsEditing(true);
       }
-    } else {
-      console.log("No form data found in localStorage");
+    };
+
+    fetchSavedData();
+  }, [VITE_BACKEND_BASE_URL]);
+
+  // Save formData to localStorage only when editing
+  useEffect(() => {
+    if (isEditing) {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(formData));
     }
-  }, []);
+  }, [formData, isEditing]);
 
-  // Save formData to localStorage whenever it changes
+  // Save logoPreview to localStorage
   useEffect(() => {
-    console.log("Saving form data to localStorage:", formData);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(formData));
-  }, [formData]);
-
-  // Save logoPreview to localStorage whenever it changes
-  useEffect(() => {
-    if (logoPreview) {
-      // console.log("Saving logo preview to localStorage:", logoPreview);
+    if (logoPreview && isEditing) {
       localStorage.setItem(LOCAL_STORAGE_LOGO_KEY, logoPreview);
     } else {
-      // console.log("Removing logo preview from localStorage");
       localStorage.removeItem(LOCAL_STORAGE_LOGO_KEY);
     }
-  }, [logoPreview]);
+  }, [logoPreview, isEditing]);
 
   // Validate form fields
   const validateForm = useCallback(() => {
@@ -133,14 +139,12 @@ const BasicInfoPage = () => {
       }
     });
     setErrors(newErrors);
-    // console.log("Validation errors:", newErrors);
     return Object.keys(newErrors).length === 0;
   }, [formData]);
 
   // Handle input changes
   const handleInputChange = useCallback((e) => {
     const { name, value } = e.target;
-    // console.log(`Input changed: ${name} = ${value}`);
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -148,10 +152,9 @@ const BasicInfoPage = () => {
     setErrors((prev) => ({ ...prev, [name]: undefined }));
   }, []);
 
-  // Handle medium radio button changes
+  // Handle medium радио button changes
   const handleMediumChange = useCallback((e) => {
     const { name, value } = e.target;
-    // console.log(`Radio changed: ${name} = ${value}`);
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -162,7 +165,6 @@ const BasicInfoPage = () => {
   // Handle exam checkbox changes
   const handleCheckboxChange = useCallback((e) => {
     const { name, value, checked } = e.target;
-    // console.log(`Checkbox changed: ${name} = ${value}, checked: ${checked}`);
     setFormData((prev) => ({
       ...prev,
       [name]: checked
@@ -176,38 +178,30 @@ const BasicInfoPage = () => {
   const handleLogoUpload = useCallback(
     async (e) => {
       const file = e.target.files[0];
-      if (!file) {
-        // console.log("No file selected for upload");
-        return;
-      }
+      if (!file) return;
 
-      const token = Cookies.get("authToken");
       const fileURL = URL.createObjectURL(file);
-      // console.log("Uploading logo, preview URL:", fileURL);
       setLogoPreview(fileURL);
       setIsLogoUploading(true);
 
       try {
         const uploadFormData = new FormData();
-        uploadFormData.append("logo", file);
+        uploadFormData.append("image", file);
 
         const response = await axios.patch(
           `${VITE_BACKEND_BASE_URL}/api/institutes/upload/image`,
           uploadFormData,
           {
             headers: {
-              Authorization: `Bearer ${token}`,
               "Content-Type": "multipart/form-data",
             },
           }
         );
 
-        console.log("Full API response:", response.data);
         if (response.status === 200) {
           const logoUrl = response.data.url || response.data.logoUrl || "";
-          console.log("Logo uploaded successfully, URL:", logoUrl);
           setFormData((prev) => ({ ...prev, logo: logoUrl }));
-          setLogoPreview(logoUrl || fileURL); // Use backend URL if available, else keep blob
+          setLogoPreview(logoUrl || fileURL);
           setErrors((prev) => ({ ...prev, logo: undefined }));
         }
       } catch (error) {
@@ -225,58 +219,42 @@ const BasicInfoPage = () => {
   );
 
   // Handle logo deletion
-  const handleDeleteLogo = () => {
+  const handleDeleteLogo = useCallback(() => {
     setFormData((prev) => ({ ...prev, logo: "" }));
     setLogoPreview(null);
     setErrors((prev) => ({ ...prev, logo: undefined }));
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
-  };
+  }, []);
 
   // Handle form submission
   const handleSubmit = useCallback(
     async (e) => {
       e.preventDefault();
-      if (!validateForm() || isSubmitting) {
-        // console.log("Form validation failed or already submitting");
-        return;
-      }
+      if (!validateForm() || isSubmitting) return;
       setIsSubmitting(true);
 
       try {
-        const token = Cookies.get("authToken");
-        const formDataToSend = new FormData();
-        Object.entries(formData).forEach(([key, value]) => {
-          formDataToSend.append(
-            key,
-            Array.isArray(value) ? JSON.stringify(value) : value
-          );
-        });
-        console.log(
-          "Submitting form data:",
-          Object.fromEntries(formDataToSend)
-        );
-
         const response = await axios.patch(
           `${VITE_BACKEND_BASE_URL}/api/institutes/me/basic-info`,
-          formDataToSend,
+          formData,
           {
             headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "multipart/form-data",
+              "Content-Type": "application/json",
             },
           }
         );
 
+        console.log("Data send successfully", formData);
+        
         if (response.status === 200) {
-          // console.log(
-          //   "Form submitted successfully, navigating to contact page"
-          // );
+          // localStorage.removeItem(LOCAL_STORAGE_KEY);
+          // localStorage.removeItem(LOCAL_STORAGE_LOGO_KEY);
           navigate("/institute/contact");
         }
       } catch (error) {
-        // console.error("Form submission failed:", error);
+        console.error("Form submission failed:", error);
         setErrors({
           submit: error.response?.data?.message || "Failed to submit form",
         });
@@ -311,8 +289,8 @@ const BasicInfoPage = () => {
                 isEditing ? "bg-gray-200" : "bg-gray-50"
               } rounded-xl text-base font-medium p-2 sm:px-4 sm:py-3 border-none outline-none focus:ring-2 focus:ring-[#2D7A66] `}
               type="text"
-              name="name"
-              value={formData.name}
+              name="institute_name"
+              value={formData.institute_name}
               onChange={handleInputChange}
               placeholder="Enter Your Institute Name"
               aria-invalid={!!errors.name}

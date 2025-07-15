@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
-import Cookies from "js-cookie";
 import { assets } from "../assets/assets";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
@@ -8,33 +7,40 @@ import { AppContext } from "../context/AppContext";
 
 const EmailVerificationPage = () => {
   const [code, setCode] = useState(["", "", "", "", "", ""]);
-  const [email, setEmail] = useState("");
-  const [userType, setUserType] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const inputRefs = Array(6)
     .fill()
     .map(() => React.createRef());
-  const VITE_BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL;
+
+  const {
+    VITE_BACKEND_BASE_URL,
+    user,
+    setUser,
+    userType,
+    setUserType,
+    showEmailVerification,
+    setShouldFetchUser,
+  } = useContext(AppContext);
+
   const navigate = useNavigate();
-  const { setUser, setAuthToken } = useContext(AppContext);
+
+  const email = user?.email || localStorage.getItem("verify_email");
+  const type = userType || localStorage.getItem("verify_user_type");
 
   useEffect(() => {
-    const storedEmail = Cookies.get("signupEmail");
-    const storedUserType = Cookies.get("userType");
-
-    if (!storedEmail || !storedUserType) {
-      toast.error("Missing signup info. Please signup again.");
-      navigate(
-        "/" +
-          (storedUserType === "institute" ? "institute" : "student") +
-          "/signup"
-      );
+    // Allow initial load to resolve values
+    if (!showEmailVerification) {
+      navigate("/");
       return;
     }
 
-    setEmail(storedEmail);
-    setUserType(storedUserType);
+    // Wait for `email` and `type` to become available
+    if (!email || !type) return;
+
+    // Set context again if not present
+    if (!userType) setUserType(type);
+
     inputRefs[0].current?.focus();
 
     const interval = setInterval(() => {
@@ -42,17 +48,27 @@ const EmailVerificationPage = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [navigate]);
+  }, [email, type, navigate, showEmailVerification, userType]);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!email || !type) {
+        toast.error("Missing signup info. Please signup again.");
+        navigate("/student/signup"); // fallback
+      }
+    }, 2000); // give it 2s to resolve context or localStorage
+
+    return () => clearTimeout(timeout);
+  }, [email, type]);
 
   const handleCodeChange = (index, value) => {
-    if (/^\d?$/.test(value)) {
-      const updated = [...code];
-      updated[index] = value;
-      setCode(updated);
+    if (!/^\d?$/.test(value)) return;
+    const updatedCode = [...code];
+    updatedCode[index] = value;
+    setCode(updatedCode);
 
-      if (value && index < 5) inputRefs[index + 1].current?.focus();
-      if (!value && index > 0) inputRefs[index - 1].current?.focus();
-    }
+    if (value && index < 5) inputRefs[index + 1].current?.focus();
+    else if (!value && index > 0) inputRefs[index - 1].current?.focus();
   };
 
   const handleKeyDown = (index, e) => {
@@ -62,55 +78,39 @@ const EmailVerificationPage = () => {
   };
 
   const getVerifyEndpoint = () =>
-    userType === "institute"
-      ? "/api/institutes/verify"
-      : "/api/students/verify";
+    type === "institute" ? "/api/institutes/verify" : "/api/students/verify";
+
+  const getResendEndpoint = () =>
+    type === "institute"
+      ? "/api/institutes/resend-verification"
+      : "/api/students/resend-verification";
 
   const handleVerify = async (e) => {
     e.preventDefault();
     const fullCode = code.join("");
 
-    if (fullCode.length !== 6) return toast.error("Please enter all 6 digits");
+    if (fullCode.length !== 6) {
+      toast.error("Please enter all 6 digits");
+      return;
+    }
 
     setIsLoading(true);
-
-    const userType = Cookies.get("userType"); // Read userType from cookies
-
     try {
       const res = await axios.post(
         `${VITE_BACKEND_BASE_URL}${getVerifyEndpoint()}`,
-        {
-          email,
-          code: fullCode,
-        }
+        { email, code: fullCode },
+        { withCredentials: true }
       );
 
-      // ✅ Save user + token to cookies
-      const userData = res.data.user;
-      const token = res.data.token;
-
-      if (userData && token) {
-        Cookies.set("authToken", token, { path: "/" });
-        Cookies.set("user", JSON.stringify(userData), { path: "/" });
-
-        setUser(userData); // ✅ update context
-        setAuthToken(token); // ✅ update context
-      }
-
       toast.success(res.data.message || "Verified successfully");
+      setUser(res.data.user);
+      setShouldFetchUser(true);
+      setCode(["", "", "", "", "", ""]);
 
-      // Remove cookies after successful verification
-      Cookies.remove("signupEmail");
-      Cookies.remove("userType");
-
-      // Redirect based on userType
-      if (userType === "student") {
-        navigate("/"); // Redirect student to homepage
-      } else if (userType === "institute") {
-        navigate("/institute/basic-info");
-      } else {
-        navigate("/"); // fallback in case userType is missing or invalid
-      }
+      navigate(type === "institute" ? "/institute/basic-info" : "/");
+      // Clear storage
+      localStorage.removeItem("verify_email");
+      localStorage.removeItem("verify_user_type");
     } catch (err) {
       toast.error(err.response?.data?.message || "Verification failed");
     } finally {
@@ -120,13 +120,15 @@ const EmailVerificationPage = () => {
 
   const handleResend = async (e) => {
     e.preventDefault();
-    if (resendCooldown > 0) return;
+    if (resendCooldown > 0 || !email) return;
 
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      await axios.post(`${VITE_BACKEND_BASE_URL}${getVerifyEndpoint()}`, {
-        email,
-      });
+      await axios.post(
+        `${VITE_BACKEND_BASE_URL}${getResendEndpoint()}`,
+        { email },
+        { withCredentials: true }
+      );
       toast.success("New code sent to your email");
       setResendCooldown(60);
       setCode(["", "", "", "", "", ""]);
@@ -139,14 +141,12 @@ const EmailVerificationPage = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[url('/src/assets/signup_bg.png')] bg-cover bg-center flex items-center justify-center relative">
-      <div className="absolute inset-0 backdrop-blur-sm bg-black/30 z-0" />
-
-      <div className="relative z-10 bg-white/95 border border-gray-200 rounded-2xl shadow-xl p-6 md:p-8 max-w-lg w-full">
+    <div className="min-h-screen bg-[url('/src/assets/signup_bg.png')] bg-cover bg-center flex items-center justify-center relative">
+      <div className="absolute inset-0 backdrop-blur-sm bg-black/30" />
+      <div className="relative bg-white/95 border border-gray-200 rounded-2xl shadow-xl p-6 max-w-lg w-full">
         <div className="flex justify-center mb-4">
           <img src={assets.logo} alt="Logo" className="w-36" />
         </div>
-
         <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">
           Verify Your Email
         </h2>
@@ -154,8 +154,7 @@ const EmailVerificationPage = () => {
           We sent a 6-digit code to <span className="font-medium">{email}</span>
         </p>
         <p className="text-center text-sm text-gray-500 mb-3">
-          Verifying as{" "}
-          <span className="font-semibold capitalize">{userType}</span>
+          Verifying as <span className="font-semibold capitalize">{type}</span>
         </p>
         <p className="text-center text-sm text-gray-700 mb-6">
           Enter the code below to confirm your account.
@@ -172,7 +171,7 @@ const EmailVerificationPage = () => {
                 value={digit}
                 onChange={(e) => handleCodeChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
-                className="w-10 h-12 sm:w-12 sm:h-14 text-center text-2xl font-semibold border border-gray-300 rounded-lg shadow-sm outline-none focus:ring-2 focus:ring-[#2D7A66] bg-white"
+                className="w-10 h-12 text-center text-2xl font-semibold border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#2D7A66] bg-white"
                 disabled={isLoading}
               />
             ))}
@@ -181,7 +180,7 @@ const EmailVerificationPage = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-2 sm:py-3 rounded-full bg-[#2D7A66] text-white font-semibold hover:bg-[#204B54] transition-colors disabled:opacity-60"
+            className="w-full py-2 rounded-full bg-[#2D7A66] text-white font-semibold hover:bg-[#204B54] disabled:opacity-60"
           >
             {isLoading ? "Verifying..." : "VERIFY"}
           </button>

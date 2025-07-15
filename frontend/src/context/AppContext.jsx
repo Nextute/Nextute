@@ -13,10 +13,13 @@ const AppContextProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [userType, setUserType] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [shouldFetchUser, setShouldFetchUser] = useState(false);
+  const [shouldFetchUser, setShouldFetchUser] = useState(true);
+  const [institutes, setInstitutes] = useState([]);
+  const [institutesLoaded, setInstitutesLoaded] = useState(false);
+
 
   const fetchUser = async () => {
-    setLoading(true); // ✅ loading start here
+    setLoading(true); 
 
     try {
       const studentRes = await axios.get(
@@ -25,6 +28,8 @@ const AppContextProvider = ({ children }) => {
           withCredentials: true,
         }
       );
+      console.log("Student profile fetched:", studentRes.data);
+
       setUser(studentRes.data);
       setUserType("student");
     } catch {
@@ -35,6 +40,7 @@ const AppContextProvider = ({ children }) => {
             withCredentials: true,
           }
         );
+        console.log("Institute profile fetched:", instituteRes.data);
         setUser(instituteRes.data);
         setUserType("institute");
       } catch {
@@ -115,7 +121,12 @@ const AppContextProvider = ({ children }) => {
     logout,
     loading,
     shouldFetchUser,
-    setShouldFetchUser, // Important: expose this so Login can trigger fetchUser after login
+    setShouldFetchUser, 
+    setShouldFetchUser,
+    institutes,
+    setInstitutes,
+    institutesLoaded,
+    setInstitutesLoaded,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -9,7 +9,6 @@ import { useNavigate } from "react-router-dom";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 const sanitizeInput = (input) => input.replace(/[<>]/g, "");
-
 const cleanPhoneNumber = (phone) => phone.replace(/[\s.-]/g, "");
 
 const validateInput = (input, defaultCountry = "IN") => {

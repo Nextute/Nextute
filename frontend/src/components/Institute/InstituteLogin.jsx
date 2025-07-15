@@ -8,15 +8,10 @@ import { AppContext } from "../../context/AppContext";
 import { useNavigate } from "react-router-dom";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 
-// Sanitize input to prevent XSS
 const sanitizeInput = (input) => input.replace(/[<>]/g, "");
-
-// Preprocess phone number to remove extra spaces, hyphens, or dots
 const cleanPhoneNumber = (phone) => phone.replace(/[\s.-]/g, "");
 
-// Simplified validation based on '@' symbol
 const validateInput = (input, defaultCountry = "IN") => {
-  // Check if input contains '@' to determine if it's an email
   if (input.includes("@")) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const isValid = emailRegex.test(input);
@@ -27,7 +22,6 @@ const validateInput = (input, defaultCountry = "IN") => {
       error: isValid ? "" : "Please enter a valid email address.",
     };
   } else {
-    // Treat as phone number
     try {
       const cleanedPhone = cleanPhoneNumber(input);
       const phoneNumber = parsePhoneNumberFromString(
@@ -38,7 +32,7 @@ const validateInput = (input, defaultCountry = "IN") => {
         return {
           type: "phone",
           isValid: true,
-          value: phoneNumber.formatInternational(),
+          value: phoneNumber.number,
           error: "",
         };
       }
@@ -46,15 +40,14 @@ const validateInput = (input, defaultCountry = "IN") => {
         type: "phone",
         isValid: false,
         value: input,
-        error:
-          "Invalid phone number format. Please enter a 10-digit number or include country code (e.g., +91).",
+        error: "Invalid phone number format.",
       };
     } catch {
       return {
         type: "phone",
         isValid: false,
         value: input,
-        error: "Error validating phone number. Please check your input.",
+        error: "Error validating phone number.",
       };
     }
   }
@@ -69,10 +62,15 @@ const InstituteLogin = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState({ loginInput: "", password: "" });
 
-  const { VITE_BACKEND_BASE_URL } = useContext(AppContext);
+  const {
+    VITE_BACKEND_BASE_URL,
+    setUser,
+    setUserType,
+    setShouldFetchUser,
+    setShowLogin,
+  } = useContext(AppContext);
   const navigate = useNavigate();
 
-  // Real-time validation
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     const sanitizedValue = sanitizeInput(value);
@@ -92,22 +90,25 @@ const InstituteLogin = () => {
     }
   };
 
+  const resetForm = () => {
+    setLoginInput("");
+    setPassword("");
+    setErrors({ loginInput: "", password: "" });
+  };
+
   const onSubmitHandler = async (e) => {
     e.preventDefault();
+    const sanitizedLoginInput = sanitizeInput(loginInput.trim());
+    const sanitizedPassword = sanitizeInput(password.trim());
 
-    const sanitizedLoginInput = sanitizeInput(loginInput);
-    const sanitizedPassword = sanitizeInput(password);
-
-    // Check for empty fields
     if (!sanitizedLoginInput || !sanitizedPassword) {
       setErrors({
         loginInput: sanitizedLoginInput ? "" : "Phone or email is required.",
         password: sanitizedPassword ? "" : "Password is required.",
       });
-      return;
+      return toast.error("Please fill in all fields.");
     }
 
-    // Validate input and determine type
     const validation = validateInput(sanitizedLoginInput);
 
     if (!validation.isValid) {
@@ -115,59 +116,51 @@ const InstituteLogin = () => {
         ...prev,
         loginInput: validation.error,
       }));
-      toast.error(validation.error);
-      return;
+      return toast.error(validation.error);
     }
 
-    // Password validation
-    if (sanitizedPassword.length < 6) {
+    if (sanitizedPassword.length < 8) {
       setErrors((prev) => ({
         ...prev,
-        password: "Password must be at least 6 characters.",
+        password: "Password must be at least 8 characters.",
       }));
-      toast.error("Password must be at least 6 characters.");
-      return;
+      return toast.error("Password must be at least 8 characters.");
+    }
+
+    const payload = { password: sanitizedPassword };
+    if (validation.type === "email") {
+      payload.email = sanitizedLoginInput;
+    } else {
+      payload.phone = sanitizedLoginInput;
     }
 
     setLoading(true);
     try {
-      // Create payload based on input type
-      const payload = {
-        password: sanitizedPassword,
-        rememberMe,
-      };
-
-      // Add email or phone based on validation result
-      if (validation.type === "email") {
-        payload.email = sanitizedLoginInput;
-      } else {
-        payload.phone = validation.value; 
-      }
-
       const response = await fetch(
         `${VITE_BACKEND_BASE_URL}/api/institutes/auth/login`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify(payload),
         }
       );
 
-      if (response.ok) {
-        toast.success("Login successful!");
-        window.location.href = "http://localhost:5173/";
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.message || "Login failed. Please try again.");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Login failed.");
       }
+
+      toast.success("Login successful!");
+      setUser(data.user);
+      setUserType("institute");
+      setShouldFetchUser(true);
+      setShowLogin(false);
+      resetForm();
+      navigate("/");
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.message ||
-        "Login failed. Please check your credentials and try again.";
-      toast.error(errorMessage);
+      toast.error(error.message || "Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -187,7 +180,7 @@ const InstituteLogin = () => {
         <div className="w-full max-w-md sm:max-w-lg lg:max-w-xl flex flex-col items-center">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
             <h2 className="text-2xl sm:text-3xl font-semibold text-[#1F4C56]">
-              Don't have an account?
+              Don’t have an account?
             </h2>
             <button
               type="button"
@@ -198,8 +191,8 @@ const InstituteLogin = () => {
               Sign Up
             </button>
           </div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl text-[#204B55] font-semibold mb-8">
-            Login
+          <h1 className="text-3xl sm:text-4lg lg:text-5xl text-[#204B55] font-semibold mb-8">
+            Institute Login
           </h1>
 
           {/* Form Inputs */}
@@ -208,7 +201,11 @@ const InstituteLogin = () => {
             onSubmit={onSubmitHandler}
             noValidate
           >
-            <div className="w-full flex items-center gap-4 border-b pb-2">
+            <div
+              className={`w-full flex items-center gap-4 border-b-2 ${
+                errors.loginInput ? "border-red-500" : "border-[#1F4C56]"
+              } pb-2`}
+            >
               <BiSolidUserRectangle
                 className="size-8 text-[#1F4C56] mx-6"
                 aria-hidden="true"
@@ -223,9 +220,7 @@ const InstituteLogin = () => {
                 value={loginInput}
                 onChange={handleInputChange}
                 placeholder="Phone or Email"
-                className={`w-full px-4 py-2 text-lg sm:text-xl text-[#1F4C56] font-medium placeholder:text-gray-400 placeholder:font-normal focus:outline-none focus:ring-0 ${
-                  errors.loginInput ? "border-red-500" : "border-[#1F4C56]"
-                }`}
+                className="w-full px-4 py-2 text-lg sm:text-xl text-[#1F4C56] font-medium placeholder:text-gray-400 placeholder:font-normal focus:outline-none focus:ring-0"
                 disabled={loading}
                 required
                 aria-required="true"
@@ -247,7 +242,11 @@ const InstituteLogin = () => {
               </p>
             )}
 
-            <div className="w-full relative flex items-center gap-4 border-b pb-2">
+            <div
+              className={`w-full relative flex items-center gap-4 border-b-2 ${
+                errors.password ? "border-red-500" : "border-[#1F4C56]"
+              } pb-2`}
+            >
               <RiLock2Fill
                 className="size-8 text-[#1F4C56] mx-6"
                 aria-hidden="true"
@@ -264,9 +263,7 @@ const InstituteLogin = () => {
                 onFocus={() => setIsPasswordFocused(true)}
                 onBlur={() => setIsPasswordFocused(false)}
                 placeholder="Password"
-                className={`w-full px-4 py-2 text-lg sm:text-xl text-[#1F4C56] font-medium placeholder:text-gray-400 placeholder:font-normal focus:outline-none focus:ring-0 ${
-                  errors.password ? "border-red-500" : "border-[#1F4C56]"
-                }`}
+                className="w-full px-4 py-2 text-lg sm:text-xl text-[#1F4C56] font-medium placeholder:text-gray-400 placeholder:font-normal focus:outline-none focus:ring-0"
                 disabled={loading}
                 required
                 aria-required="true"
@@ -279,7 +276,7 @@ const InstituteLogin = () => {
                     e.preventDefault();
                     setShowPassword((prev) => !prev);
                   }}
-                  className="absolute right-10 top-3 text-[#1F4C56] font-semibold cursor-pointer"
+                  className="absolute right-10 top-2.5 text-[#1F4C56] font-semibold cursor-pointer"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff size={25} /> : <Eye size={25} />}

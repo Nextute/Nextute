@@ -5,7 +5,7 @@ import { toast } from "react-hot-toast";
 import PasswordStrength from "../../context/PasswordStrength";
 import { AppContext } from "../../context/AppContext";
 import PhoneNumberValidator from "../../context/PhoneNumberValidator.jsx";
-import Cookies from "js-cookie";
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 // Sanitize input to prevent XSS
@@ -32,8 +32,14 @@ const InstituteSignup = () => {
   });
 
   const navigate = useNavigate();
-  const { VITE_BACKEND_BASE_URL, setShowEmailVerification } =
-    useContext(AppContext);
+  const {
+    VITE_BACKEND_BASE_URL,
+    setShowEmailVerification,
+    setUser,
+    setUserType,
+    setShowSignup,
+    setShouldFetchUser,
+  } = useContext(AppContext);
 
   // Real-time validation
   const validateField = (name, value) => {
@@ -89,17 +95,32 @@ const InstituteSignup = () => {
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
+    console.log("DEBUG: Starting signup submission");
+    console.log("DEBUG: Form data:", {
+      institute_name,
+      email,
+      contact,
+      password,
+    });
 
     const newErrors = {
       institute_name: validateField("institute_name", institute_name),
       email: validateField("email", email),
       contact: validateField("contact", contact),
       password: validateField("password", password),
+      confirmPassword: validateField(
+        "confirmPassword",
+        confirmPassword,
+        password
+      ),
     };
+
+    console.log("DEBUG: Validation errors:", newErrors);
 
     if (Object.values(newErrors).some((error) => error)) {
       setErrors(newErrors);
       toast.error("Please fix the errors in the form.");
+      console.log("DEBUG: Form validation failed");
       return;
     }
 
@@ -108,16 +129,22 @@ const InstituteSignup = () => {
         ...prev,
         confirmPassword: "Passwords do not match.",
       }));
+      console.log("DEBUG: Passwords do not match");
       return;
     }
 
-    const phoneValidation = PhoneNumberValidator(contact);
-    if (!phoneValidation.isValid) {
-      setErrors((prev) => ({ ...prev, contact: phoneValidation.error }));
-      return;
+    if (contact) {
+      const phoneValidation = PhoneNumberValidator(contact);
+      console.log("DEBUG: Phone validation:", phoneValidation);
+      if (!phoneValidation.isValid) {
+        setErrors((prev) => ({ ...prev, contact: phoneValidation.error }));
+        console.log("DEBUG: Phone validation failed");
+        return;
+      }
     }
 
     setLoading(true);
+    console.log("DEBUG: Sending signup request");
     try {
       const formData = {
         institute_name,
@@ -126,45 +153,46 @@ const InstituteSignup = () => {
         password,
       };
 
-      const response = await fetch(
+      const response = await axios.post(
         `${VITE_BACKEND_BASE_URL}/api/institutes/signup`,
+        formData,
         {
-          method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          credentials: "include", // ✅ send cookies
-          body: JSON.stringify(formData),
+          withCredentials: true, // Send cookies
         }
       );
 
-      const data = await response.json();
+      console.log("DEBUG: Signup response:", response.data);
 
-      if (response.ok) {
-        const authToken = Cookies.get("authToken");
-        const user = Cookies.get("user");
-
-        console.log("✅ Token from cookies:", authToken);
-        console.log("✅ User from cookies:", user && JSON.parse(user));
-
-        // 🔁 Clear old values first
-        Cookies.remove("signupEmail");
-        Cookies.remove("userType");
-
-        // ✅ Set updated values
-        Cookies.set("signupEmail", email);
-        Cookies.set("userType", "institute");
-
+      if (response.status === 201) {
+        const userData = response.data?.user || {}; // get user if backend sends it
         toast.success("Registration successful! Please verify your email.");
+
+        // Context updates for navbar
+        setUser(userData);
+        setUserType("institute");
+        setShouldFetchUser(true);
+        setShowSignup(false);
         setShowEmailVerification(true);
-        navigate("/verify"); // Redirect to email verification page
+        localStorage.setItem("verify_email", data.user.email);
+        localStorage.setItem("verify_user_type", "institute");
+
+        navigate("/verify", { state: { email, userType: "institute" } });
       } else {
-        toast.error(data.message || "Registration failed.");
+        console.error("DEBUG: Signup failed:", response.data.message);
+        toast.error(response.data.message || "Registration failed.");
       }
     } catch (error) {
-      toast.error("Something went wrong. Please try again later.");
+      console.error("DEBUG: Signup error:", error.response?.data || error);
+      toast.error(
+        error.response?.data?.message ||
+          "Something went wrong. Please try again later."
+      );
     } finally {
       setLoading(false);
+      console.log("DEBUG: Signup request completed");
     }
   };
 
