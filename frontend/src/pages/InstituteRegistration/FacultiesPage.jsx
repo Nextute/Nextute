@@ -17,10 +17,12 @@ import {
 import { FiUpload } from "react-icons/fi";
 import RegistrationNavigation from "../../components/Institute/RegistrationNavigation";
 import axios from "axios";
-import Cookies from "js-cookie";
 import { AppContext } from "../../context/AppContext";
+import { toast } from "react-hot-toast";
 
-// ✅ DEFAULT FACULTY OBJECT (Removed media field)
+// Set axios defaults to include credentials (cookies)
+axios.defaults.withCredentials = true;
+
 const defaultFaculty = {
   firstName: "",
   middleName: "",
@@ -36,11 +38,11 @@ const defaultFaculty = {
 };
 
 const LOCAL_STORAGE_KEY = "instituteFacultiesForm";
-const PROGRESS_KEY = "instituteProgress";
+const LOCAL_STORAGE_MEDIA_KEY = "instituteFacultiesMediaPreview";
 
 const FacultiesPage = () => {
   const [faculties, setFaculties] = useState([{ ...defaultFaculty }]);
-  const [mediaPreview, setMediaPreview] = useState([]);
+  const [mediaPreview, setMediaPreview] = useState([null]);
   const [expandedIndex, setExpandedIndex] = useState(0);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,39 +51,78 @@ const FacultiesPage = () => {
   const { VITE_BACKEND_BASE_URL } = useContext(AppContext);
   const navigate = useNavigate();
 
-  // ✅ Load from localStorage on mount
+  // Fetch saved data from backend on mount
   useEffect(() => {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-    const progress = localStorage.getItem(PROGRESS_KEY);
-    if (saved) {
+    const fetchFacultiesData = async () => {
       try {
-        const parsed = JSON.parse(saved);
-        setFaculties(parsed.length > 0 ? parsed : [{ ...defaultFaculty }]);
-        setMediaPreview(
-          parsed.map((f) =>
-            f.photo && typeof f.photo === "string" ? f.photo : null
-          )
+        const response = await axios.get(
+          `${VITE_BACKEND_BASE_URL}/api/institutes/profile`
         );
-        if (progress === "achievements") setIsEditing(false);
-      } catch {
+        console.log("Fetched profile data:", response.data);
+        
+
+        if (response.status === 200 && response.data.data?.faculty_details) {
+          let savedData = response.data.data.faculty_details;
+          if (typeof savedData === "string") {
+            savedData = JSON.parse(savedData);
+          }
+          if (typeof savedData.faculties === "string") {
+            savedData = JSON.parse(savedData.faculties);
+          }
+          if (Array.isArray(savedData) && savedData.length > 0) {
+            setFaculties(savedData);
+            setMediaPreview(
+              savedData.map((f) =>
+                f.photo && typeof f.photo === "string" ? f.photo : null
+              )
+            );
+            setIsEditing(false);
+          } else {
+            console.log("No valid faculties data, starting fresh");
+            setFaculties([{ ...defaultFaculty }]);
+            setMediaPreview([null]);
+            setIsEditing(true);
+          }
+        } else {
+          console.log("No faculties data in backend, starting fresh");
+          setFaculties([{ ...defaultFaculty }]);
+          setMediaPreview([null]);
+          setIsEditing(true);
+        }
+      } catch (error) {
+        console.error("Failed to fetch faculties data:", error);
         setFaculties([{ ...defaultFaculty }]);
         setMediaPreview([null]);
+        setIsEditing(true);
+        setErrors({
+          fetch:
+            error.response?.data?.message || "Failed to fetch faculties data",
+        });
       }
-    } else {
-      setMediaPreview([null]);
-    }
-  }, []);
+      // Clear localStorage to avoid stale data
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      localStorage.removeItem(LOCAL_STORAGE_MEDIA_KEY);
+    };
 
-  // ✅ Save to localStorage
+    fetchFacultiesData();
+  }, [VITE_BACKEND_BASE_URL]);
+
+  // Save faculties and media previews to localStorage when editing
   useEffect(() => {
-    console.log("Saving courses to localStorage:", faculties);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(faculties));
-  }, [faculties]);
+    if (isEditing) {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(faculties));
+      localStorage.setItem(
+        LOCAL_STORAGE_MEDIA_KEY,
+        JSON.stringify(mediaPreview)
+      );
+    }
+  }, [faculties, mediaPreview, isEditing]);
 
   const toggleExpand = useCallback((index) => {
     setExpandedIndex((prev) => (prev === index ? null : index));
   }, []);
 
+  //validate form before submission
   const validateForm = useCallback(() => {
     const newErrors = {};
     let hasValidFaculty = false;
@@ -96,7 +137,8 @@ const FacultiesPage = () => {
         f.email ||
         f.subject ||
         f.experience ||
-        f.qualification
+        f.qualification ||
+        f.photo
       ) {
         if (!f.firstName.trim()) e.firstName = "First Name is required";
         if (!f.lastName.trim()) e.lastName = "Last Name is required";
@@ -111,14 +153,19 @@ const FacultiesPage = () => {
         if (!f.qualification.trim())
           e.qualification = "Qualification is required";
       }
-      if (Object.keys(e).length === 0 && f.firstName.trim())
+      if (Object.keys(e).length === 0 && f.firstName.trim()) {
         hasValidFaculty = true;
-      if (Object.keys(e).length > 0) newErrors[`faculty${i}`] = e;
+      }
+      if (Object.keys(e).length > 0) {
+        newErrors[`faculty${i}`] = e;
+      }
     });
 
-    if (!hasValidFaculty)
+    if (!hasValidFaculty) {
       newErrors.form = "At least one faculty must be fully filled";
+    }
 
+    console.log("Validation errors:", newErrors);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }, [faculties]);
@@ -135,32 +182,95 @@ const FacultiesPage = () => {
     }));
   }, []);
 
+  // Handle photo change with error handling
   const handlePhotoChange = useCallback(
-    (index, event) => {
+    async (index, event) => {
       const file = event.target.files[0];
-      if (file) {
-        handleInputChange(index, "photo", file); // Store file in 'photo' field
-        try {
-          const url = URL.createObjectURL(file);
-          setMediaPreview((prev) => {
+      if (!file) {
+        console.log("No file selected for upload");
+        return;
+      }
+
+      // Set temporary preview
+      const tempPreview = URL.createObjectURL(file);
+      setMediaPreview((prev) => {
+        const updated = [...prev];
+        updated[index] = tempPreview;
+        return updated;
+      });
+
+      try {
+        const uploadFormData = new FormData();
+        uploadFormData.append("image", file);
+
+        const response = await axios.patch(
+          `${VITE_BACKEND_BASE_URL}/api/institutes/upload/image`,
+          uploadFormData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+
+        if (response.status === 200) {
+          const photoUrl = response.data.url || response.data.photoUrl || "";
+          console.log(`Photo uploaded for faculty[${index}]:`, photoUrl);
+          setFaculties((prev) => {
             const updated = [...prev];
-            updated[index] = url;
+            updated[index] = { ...updated[index], photo: photoUrl };
             return updated;
           });
-        } catch (err) {
-          console.error("Invalid image for preview:", err);
+          setMediaPreview((prev) => {
+            const updated = [...prev];
+            updated[index] = photoUrl;
+            return updated;
+          });
+          setErrors((prev) => ({
+            ...prev,
+            [`faculty${index}`]: {
+              ...prev[`faculty${index}`],
+              photo: undefined,
+            },
+          }));
+        } else {
+          throw new Error("Unexpected response status");
+        }
+      } catch (error) {
+        console.error(`Photo upload failed for faculty[${index}]:`, error);
+        toast.error(error.message);
+        setFaculties((prev) => {
+          const updated = [...prev];
+          updated[index] = { ...updated[index], photo: null };
+          return updated;
+        });
+        setMediaPreview((prev) => {
+          const updated = [...prev];
+          updated[index] = null;
+          return updated;
+        });
+        setErrors((prev) => ({
+          ...prev,
+          [`faculty${index}`]: {
+            ...prev[`faculty${index}`],
+            photo: error.response?.data?.message || "Failed to upload photo",
+          },
+        }));
+        if (fileInputRefs.current[index]) {
+          fileInputRefs.current[index].value = "";
         }
       }
     },
-    [handleInputChange]
+    [VITE_BACKEND_BASE_URL]
   );
 
+  // Handle delete photo
   const handleDeletePhoto = useCallback(
     (index) => {
       if (!isEditing) return;
       setFaculties((prev) => {
         const updated = [...prev];
-        updated[index].photo = null;
+        updated[index] = { ...updated[index], photo: null };
         return updated;
       });
       setMediaPreview((prev) => {
@@ -168,16 +278,26 @@ const FacultiesPage = () => {
         updated[index] = null;
         return updated;
       });
+      setErrors((prev) => ({
+        ...prev,
+        [`faculty${index}`]: { ...prev[`faculty${index}`], image: undefined },
+      }));
+      if (fileInputRefs.current[index]) {
+        fileInputRefs.current[index].value = "";
+      }
     },
     [isEditing]
   );
 
+  // Handle add faculty
   const handleAddFaculty = useCallback(() => {
     if (!isEditing) return;
     setFaculties((prev) => [...prev, { ...defaultFaculty }]);
     setMediaPreview((prev) => [...prev, null]);
-  }, [isEditing]);
+    setExpandedIndex(faculties.length);
+  }, [isEditing, faculties.length]);
 
+  //handle remove faculty
   const handleRemoveFaculty = useCallback(
     (index) => {
       if (!isEditing) return;
@@ -196,69 +316,68 @@ const FacultiesPage = () => {
     [isEditing, expandedIndex]
   );
 
-  const handleEditClick = useCallback(() => {
+  //handle edit
+   const handleEditClick = useCallback(() => {
     setIsEditing(true);
-    setIsSubmitting(false);
-    setErrors((prev) => ({ ...prev, submit: undefined }));
   }, []);
 
+  //handle submit
   const handleSubmit = useCallback(
     async (e) => {
       e.preventDefault();
-      if (!validateForm() || isSubmitting) return;
-
+      if (!validateForm() || isSubmitting) {
+        console.log("Validation failed or already submitting");
+        return;
+      }
       setIsSubmitting(true);
+
       try {
-        const validFaculties = faculties
-          .filter(
-            (f) =>
-              f.firstName.trim() &&
-              f.lastName.trim() &&
-              f.gender &&
-              f.contact &&
-              f.email &&
-              f.subject &&
-              f.experience >= 0 &&
-              f.qualification
-          )
-          .map((faculty) => ({
-            ...faculty,
-            photo: null, // Remove photo field to avoid sending File object
-          }));
-
         const formData = new FormData();
+        const facultiesForSubmission = faculties.map((faculty) => ({
+          ...faculty,
+          photo:
+            faculty.photo && typeof faculty.photo === "string"
+              ? faculty.photo
+              : null,
+        }));
+        console.log("Faculties for submission:", facultiesForSubmission);
 
-        // Append faculty data as JSON string
-        formData.append("faculty", JSON.stringify(validFaculties));
+        formData.append("faculties", JSON.stringify(facultiesForSubmission));
 
-        // Append each faculty's photo with the field name 'media'
-        validFaculties.forEach((faculty, index) => {
+        // Append all photos, including File objects
+        faculties.forEach((faculty, index) => {
           if (faculty.photo instanceof File) {
-            formData.append("media", faculty.photo);
+            formData.append(`media[${index}]`, faculty.photo);
           }
         });
 
-        const token = Cookies.get("authToken");
+        const formDataLog = {};
+        for (let [key, value] of formData.entries()) {
+          formDataLog[key] = value instanceof File ? value.name : value;
+        }
+        console.log("FormData contents:", formDataLog);
+
         const response = await axios.patch(
           `${VITE_BACKEND_BASE_URL}/api/institutes/me/faculties`,
           formData,
           {
             headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "multipart/form-data",
+              "Content-Type": "application/json",
             },
           }
         );
 
         if (response.status === 200) {
-          localStorage.setItem(PROGRESS_KEY, "achievements");
+          console.log("Submission successful:", response.data);
+          localStorage.removeItem(LOCAL_STORAGE_KEY);
+          localStorage.removeItem(LOCAL_STORAGE_MEDIA_KEY);
+          setIsEditing(false);
           navigate("/institute/student-achievements");
-        } else throw new Error("Server error");
+        }
       } catch (error) {
         console.error("Form submission failed:", error);
         setErrors({
-          submit:
-            error.response?.data?.message || "Submission failed. Try again.",
+          submit: error.response?.data?.message || "Failed to submit form",
         });
       } finally {
         setIsSubmitting(false);
@@ -283,7 +402,9 @@ const FacultiesPage = () => {
               name={`${field}-${index}`}
               checked={faculties[index][field] === option}
               onChange={() => handleInputChange(index, field, option)}
-              className="accent-[#2D7A66] size-5"
+              className={`accent-[#2D7A66] size-5 ${
+                isEditing ? "" : "opacity-50"
+              }`}
               disabled={!isEditing}
             />
             <span className="text-sm capitalize">
@@ -307,7 +428,9 @@ const FacultiesPage = () => {
           type="button"
           onClick={handleAddFaculty}
           className={`absolute top-[2.8rem] right-2 sm:right-5 text-white rounded-full px-6 py-3 flex items-center text-sm sm:text-base ${
-            isEditing ? "bg-[#204B54]" : "bg-gray-400 cursor-not-allowed"
+            isEditing
+              ? "bg-[#204B54] hover:bg-[#2D7B67]"
+              : "bg-gray-400 cursor-not-allowed"
           }`}
           disabled={!isEditing}
         >
@@ -317,7 +440,15 @@ const FacultiesPage = () => {
 
       <RegistrationNavigation />
 
-      <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
+      {errors.fetch && (
+        <p className="text-red-500 text-sm text-center mb-4">{errors.fetch}</p>
+      )}
+
+      <form
+        id="faculties-form"
+        className="mt-4 space-y-4"
+        onSubmit={handleSubmit}
+      >
         {faculties.map((faculty, index) => (
           <div
             key={index}
@@ -364,7 +495,9 @@ const FacultiesPage = () => {
                     </label>
                     <input
                       type="text"
-                      className="w-full p-2 border text-base sm:text:lg font-normal rounded-md focus:ring-2 focus:ring-[#2D7A66]"
+                      className={`w-full p-2 border text-base sm:text-lg font-normal rounded-md focus:ring-2 focus:ring-[#2D7A66] ${
+                        isEditing ? "bg-gray-200" : "bg-gray-50"
+                      }`}
                       value={faculty[field]}
                       onChange={(e) =>
                         handleInputChange(index, field, e.target.value)
@@ -398,8 +531,16 @@ const FacultiesPage = () => {
                       {label}
                     </label>
                     <input
-                      type={field === "email" ? "email" : "text"}
-                      className="w-full p-2 border text-base sm:text:lg font-normal rounded-md focus:ring-2 focus:ring-[#2D7A66]"
+                      type={
+                        field === "email"
+                          ? "email"
+                          : field === "experience"
+                          ? "number"
+                          : "text"
+                      }
+                      className={`w-full p-2 border text-base sm:text-lg font-normal rounded-md focus:ring-2 focus:ring-[#2D7A66] ${
+                        isEditing ? "bg-gray-200" : "bg-gray-50"
+                      }`}
                       value={faculty[field]}
                       onChange={(e) =>
                         handleInputChange(index, field, e.target.value)
@@ -414,7 +555,6 @@ const FacultiesPage = () => {
                   </div>
                 ))}
 
-                {/* ✅ Upload + Preview UI */}
                 <div className="relative">
                   <label className="block text-[#2D7A66] text-lg sm:text-xl font-medium mb-1">
                     Photo (PNG/JPG)
@@ -428,7 +568,9 @@ const FacultiesPage = () => {
                     disabled={!isEditing}
                   />
                   <div
-                    className="h-32 border border-gray-300 rounded cursor-pointer flex items-center justify-center"
+                    className={`h-32 border border-gray-300 rounded ${
+                      isEditing ? "cursor-pointer" : "cursor-not-allowed"
+                    } flex items-center justify-center`}
                     onClick={() =>
                       isEditing &&
                       !mediaPreview[index] &&
@@ -463,11 +605,19 @@ const FacultiesPage = () => {
                       </button>
                     </div>
                   )}
+                  {errors[`faculty${index}`]?.photo && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors[`faculty${index}`].photo}
+                    </p>
+                  )}
                 </div>
               </div>
             )}
           </div>
         ))}
+        {errors.form && (
+          <p className="text-red-500 text-sm text-center mt-4">{errors.form}</p>
+        )}
       </form>
 
       <div className="flex justify-between items-center p-4 mt-4">
@@ -478,12 +628,11 @@ const FacultiesPage = () => {
         >
           <FaArrowLeft className="mr-2" /> Back
         </button>
-
         {!isEditing ? (
           <button
             type="button"
             onClick={handleEditClick}
-            className="flex items-center px-6 py-2 rounded-full text-white font-medium bg-[#204B54] hover:bg-[#2D7B67] transition"
+            className="flex itemsmoor items-center px-6 py-2 rounded-full text-white font-medium bg-[#204B54] hover:bg-[#2D7B67] transition"
           >
             Edit
           </button>
@@ -492,7 +641,7 @@ const FacultiesPage = () => {
             type="submit"
             disabled={isSubmitting}
             onClick={handleSubmit}
-            className={`px-6 py-2 rounded-full text-white font-medium flex items-center ${
+            className={`flex items-center px-6 py-2 rounded-full text-white font-medium transition ${
               isSubmitting ? "bg-[#2D7B67] cursor-not-allowed" : "bg-[#204B54]"
             }`}
           >

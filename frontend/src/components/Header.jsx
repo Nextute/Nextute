@@ -1,10 +1,15 @@
-import { FaLocationDot } from "react-icons/fa6";
 import { assets, cities } from "../assets/assets.js";
-import { Search } from "lucide-react";
-import { RectangleIcon } from "./RectangleIcon.jsx";
-import SearchBar from "./SerachBar.jsx";
+import SearchBar from "./SearchBar.jsx";
+import { useNavigate } from "react-router-dom";
 
 const Header = () => {
+
+  const navigate = useNavigate();
+
+  const handleCityClick = (cityName) => {
+    navigate(`/search?city=${encodeURIComponent(cityName)}`);
+  };
+
   return (
     <div className="flex flex-col items-center justify-center px-4 sm:px-6 md:px-8">
       {/* Heading and Subheading */}
@@ -31,28 +36,27 @@ const Header = () => {
             <img
               src={city.src}
               alt={city.alt}
-              className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 lg:h-28 lg:w-28 object-cover rounded-full border-2 border-[#204B55] shadow-md"
+              // onClick={() => navigate(`/search?city=${encodeURIComponent(city.name)}`)}
+              onClick={() => index !== cities.length - 1 && handleCityClick(city.name)}
+              className="cursor-pointer h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 lg:h-28 lg:w-28 object-cover rounded-full border-2 border-[#204B55] shadow-md"
               style={
                 index === cities.length - 1
                   ? {
-                      backdropFilter: "blur(3.1px)",
-                      background: "#FFFFFF82",
-                      filter: "blur(3.1px)",
-                    }
+                    backdropFilter: "blur(3.1px)",
+                    background: "#FFFFFF82",
+                    filter: "blur(3.1px)",
+                  }
                   : {}
               }
             />
 
-            {/* Name or "More" Overlay */}
             <p
-              className={`mt-2 text-[#204B55] font-medium text-xs sm:text-sm ${
-                index === cities.length - 1 ? "hidden" : ""
-              }`}
+              className={`mt-2 text-[#204B55] font-medium text-xs sm:text-sm ${index === cities.length - 1 ? "hidden" : ""
+                }`}
             >
               {city.name}
             </p>
 
-            {/* More Text Overlay for last image */}
             {index === cities.length - 1 && (
               <span className="absolute inset-0 flex items-center justify-center underline text-black font-semibold text-xs sm:text-sm md:text-base">
                 More...

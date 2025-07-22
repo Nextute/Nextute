@@ -9,4 +9,4 @@ const InstituteMedia = () => {
     </div>
   );
 };
-export default InstituteMedias;
+export default InstituteMedia;

@@ -16,7 +16,6 @@ import SignupPopup from "./pages/SignupPopup";
 import EmailVerificationPage from "./pages/EmailVerificationPage";
 
 import { AppContext } from "./context/AppContext";
-import ProtectedRoute from "./components/ProtectedRoute";
 import BasicInfoPage from "./pages/InstituteRegistration/BasicInfoPage";
 import ContactPage from "./pages/InstituteRegistration/ContactPage";
 import CoursesPage from "./pages/InstituteRegistration/CoursesPage";
@@ -32,55 +31,69 @@ import ReviewPage from "./pages/ReviewPage";
 import FAQPage from "./pages/FAQPage";
 import BlogPage from "./pages/BlogPage";
 import InstituteOverviewPage from "./pages/InstituteRegistration/InstituteOverviewPage";
+import ServicesPage from "./pages/ServicesPage";
+import InstitutesList from "./components/InstitutesList "; // Fixed import
+
+import ErrorBoundary from "./components/ErrorBoundary"; // Add this file
+import SearchPage from "./pages/SearchPage";
 
 const App = () => {
-  const { setShowSignup, setShowLogin, isAuthenticated } =
-    useContext(AppContext);
+  // Use correct state names, not setters
+  const { showSignup, showLogin, isAuthenticated } = useContext(AppContext);
 
   return (
     <div className="min-h-screen">
       <ScrollToTop />
+      <ErrorBoundary>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/student/login" element={<StudentLogin />} />
+          <Route path="/student/signup" element={<StudentSignup />} />
+          <Route
+            path="/student/dashboard"
+            element={
+            
+                <StudentDashboard />
+              
+            }
+          />
+          <Route path="/about" element={<AboutUsPage />} />
+          <Route path="/review" element={<ReviewPage />} />
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/services" element={<ServicesPage />} />
+          <Route path="/institutes-data" element={<InstitutesList />} />
+          <Route
+            path="/institutes-on-location"
+            element={<InstitutesOnLocation />}
+          />
+          <Route path="/institute/login" element={<InstituteLogin />} />
+          <Route path="/institute/signup" element={<InstituteSignup />} />
+          <Route path="/institute/basic-info" element={<BasicInfoPage />} />
+          <Route path="/institute/contact" element={<ContactPage />} />
+          <Route path="/institute/courses" element={<CoursesPage />} />
+          <Route path="/institute/faculties" element={<FacultiesPage />} />
+          <Route
+            path="/institute/student-achievements"
+            element={<StudentAchievementsPage />}
+          />
+          <Route
+            path="/institute/institute-achievements"
+            element={<InstituteAchievementsPage />}
+          />
+          <Route path="/institute/facilities" element={<FacilitiesPage />} />
+          <Route path="/institute/media" element={<MediaGalleryPage />} />
+          <Route path="/institute/social" element={<SocialMediaPage />} />
+          <Route path="/institute/overview/:id" element={<InstituteOverviewPage />} />
+          <Route path="/institute/overview" element={<InstituteOverviewPage />} />
+          <Route path="/verify" element={<EmailVerificationPage />} />
 
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/student/login" element={<StudentLogin />} />
-        <Route path="/student/signup" element={<StudentSignup />} />
-        <Route path="/student/dashboard" element={<StudentDashboard />} />
-        <Route path="/about" element={<AboutUsPage />} />
-        <Route path="/review" element={<ReviewPage />} />
-        <Route path="/faq" element={<FAQPage />} />
-        <Route path="/blog" element={<BlogPage />} />
-
-        <Route
-          path="/institutes-on-location"
-          element={<InstitutesOnLocation />}
-        />
-        <Route path="/institute/login" element={<InstituteLogin />} />
-        <Route path="/institute/signup" element={<InstituteSignup />} />
-        <Route path="/institute/basic-info" element={<BasicInfoPage />} />
-        <Route path="/institute/contact" element={<ContactPage />} />
-        <Route path="/institute/courses" element={<CoursesPage />} />
-        <Route path="/institute/faculties" element={<FacultiesPage />} />
-        <Route
-          path="/institute/student-achievements"
-          element={<StudentAchievementsPage />}
-        />
-        <Route
-          path="/institute/institute-achievements"
-          element={<InstituteAchievementsPage />}
-        />
-        <Route path="/institute/facilities" element={<FacilitiesPage />} />
-        <Route path="/institute/media" element={<MediaGalleryPage />} />
-        <Route path="/institute/social" element={<SocialMediaPage />} />
-        <Route path="/institute/overview" element={<InstituteOverviewPage />} />
-
-        <Route path="/verify" element={<EmailVerificationPage />} />
-      </Routes>
-
-      {setShowLogin && <LoginPopup />}
-      {setShowSignup && <SignupPopup />}
-
-      <Toaster />
+          <Route path="/search" element={<SearchPage />} />
+        </Routes>
+        {showLogin && <LoginPopup />}
+        {showSignup && <SignupPopup />}
+        <Toaster />
+      </ErrorBoundary>
     </div>
   );
 };

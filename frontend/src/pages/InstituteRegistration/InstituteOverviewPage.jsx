@@ -1,22 +1,37 @@
-import React from 'react'
+import React from 'react';
+import { useParams } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import InstituteOverview from '../../components/Institute/InstituteOverview';
 import InstituteOverviewHeaderContent from '../../components/Institute/InstituteOverviewHeaderContent';
 import InstituteOverviewContactInfo from '../../components/Institute/Dashboard/InstituteOverviewContactInfo';
 import Footer from '../../components/Footer';
 
-export const InstituteOverviewPage = () => {
+const InstituteOverviewPage = () => {
+  const { id } = useParams();
+
   return (
     <div className="w-full min-h-screen">
-        <Navbar/>
-        <InstituteOverviewHeaderContent/>
-        <div className="flex flex-col sm:flex-row h-full">
-            <div className="sm:w-[75vw] w-full"><InstituteOverview/></div>
-            <div className="sm:w-[25vw] w-full"><InstituteOverviewContactInfo /></div>
-        </div>
-        <Footer />
-    </div>
-  )
-}
-export default InstituteOverviewPage;
+      <Navbar />
 
+      {!id && (
+        <div className="text-red-500 text-center p-4">
+          Warning: Institute ID is missing from the URL.
+        </div>
+      )}
+
+      <InstituteOverviewHeaderContent id={id} />
+      <div className="flex flex-col sm:flex-row h-full">
+        <div className="sm:w-[75vw] w-full">
+          <InstituteOverview id={id} />
+        </div>
+        <div className="sm:w-[25vw] w-full">
+          <InstituteOverviewContactInfo id={id} />
+        </div>
+      </div>
+
+      <Footer />
+    </div>
+  );
+};
+
+export default InstituteOverviewPage;
