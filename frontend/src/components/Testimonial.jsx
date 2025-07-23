@@ -1,4 +1,3 @@
-
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Navigation, Autoplay } from 'swiper/modules';
 import 'swiper/css';
@@ -6,7 +5,7 @@ import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 import '../index.css';
 
-import Polygon from "./Testimonials/Polygon";
+import TestimonialCard from "./TestimonialCard";
 
 const Testimonial = () => {
   return (
@@ -39,15 +38,15 @@ const Testimonial = () => {
         }}
         className="max-w-screen-xl mx-auto relative pb-5"
       >
-        <SwiperSlide><Polygon /></SwiperSlide>
-        <SwiperSlide><Polygon /></SwiperSlide>
-        <SwiperSlide><Polygon /></SwiperSlide>
-        <SwiperSlide><Polygon /></SwiperSlide>
-        <SwiperSlide><Polygon /></SwiperSlide>
-        <SwiperSlide><Polygon /></SwiperSlide>
-        <SwiperSlide><Polygon /></SwiperSlide>
-        <SwiperSlide><Polygon /></SwiperSlide>
-        <SwiperSlide><Polygon /></SwiperSlide>
+        <SwiperSlide><TestimonialCard /></SwiperSlide>
+        <SwiperSlide><TestimonialCard /></SwiperSlide>
+        <SwiperSlide><TestimonialCard /></SwiperSlide>
+        <SwiperSlide><TestimonialCard /></SwiperSlide>
+        <SwiperSlide><TestimonialCard /></SwiperSlide>
+        <SwiperSlide><TestimonialCard /></SwiperSlide>
+        <SwiperSlide><TestimonialCard /></SwiperSlide>
+        <SwiperSlide><TestimonialCard /></SwiperSlide>
+        <SwiperSlide><TestimonialCard /></SwiperSlide>
       </Swiper>
     </div>
   );

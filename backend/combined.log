@@ -3154,3 +3154,5 @@
 {"level":"info","message":{"ip":"::1","method":"GET","timestamp":"2025-07-22T10:42:02.977Z","url":"/api/institutes/all-institutes"},"timestamp":"2025-07-22T10:42:02.977Z"}
 {"level":"info","message":{"ip":"::1","method":"GET","timestamp":"2025-07-22T10:48:51.373Z","url":"/api/institutes/all-institutes"},"timestamp":"2025-07-22T10:48:51.373Z"}
 {"level":"info","message":{"ip":"::1","method":"GET","timestamp":"2025-07-22T15:29:42.858Z","url":"/api/institutes/all-institutes"},"timestamp":"2025-07-22T15:29:42.859Z"}
+{"level":"info","message":{"ip":"::1","method":"GET","timestamp":"2025-07-23T07:42:33.178Z","url":"/api/institutes/all-institutes"},"timestamp":"2025-07-23T07:42:33.179Z"}
+{"level":"info","message":{"ip":"::1","method":"GET","timestamp":"2025-07-23T17:52:18.993Z","url":"/api/institutes/all-institutes"},"timestamp":"2025-07-23T17:52:18.993Z"}

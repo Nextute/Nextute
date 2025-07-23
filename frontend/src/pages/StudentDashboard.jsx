@@ -16,9 +16,11 @@ const StudentDashboard = () => {
     isAuthenticated,
     loading: authLoading,
     logout,
+    VITE_BACKEND_BASE_URL,
   } = useContext(AppContext);
 
   const [dashboardData, setDashboardData] = useState(null);
+  const [studentProfile, setStudentProfile] = useState(null);
   const [dataLoading, setDataLoading] = useState(false);
   const [error, setError] = useState(null);
   const [logoutLoading, setLogoutLoading] = useState(false);
@@ -29,7 +31,7 @@ const StudentDashboard = () => {
       setError(null);
       try {
         const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_BASE_URL}/api/students/profile`,
+          `${VITE_BACKEND_BASE_URL}/api/students/profile`,
           {
             withCredentials: true,
             signal: abortController?.signal,
@@ -38,7 +40,10 @@ const StudentDashboard = () => {
         if (!response.data) {
           throw new Error("No dashboard data received.");
         }
+        // Set both dashboard data and student profile from the API response
         setDashboardData(response.data);
+        setStudentProfile(response.data.data); // Extract the student data from the response
+        console.log("Student profile data:", response.data.data); // Debug log
       } catch (err) {
         if (err.name === "CanceledError") return;
         if (err.response?.status === 401) {
@@ -89,6 +94,7 @@ const StudentDashboard = () => {
     user,
     fetchDashboardData,
     navigate,
+    VITE_BACKEND_BASE_URL,
   ]);
 
   if (authLoading || dataLoading) {
@@ -121,7 +127,7 @@ const StudentDashboard = () => {
     );
   }
 
-  if (!user) {
+  if (!user || !studentProfile) {
     return (
       <div className="text-center mt-10 text-red-600">
         No student data available. Please log in again.
@@ -140,18 +146,18 @@ const StudentDashboard = () => {
       >
         <div className="w-full flex-grow bg-white mx-auto">
           <DashboardHeader
-            studentData={user}
+            studentData={studentProfile}
             logout={handleLogout}
             logoutLoading={logoutLoading}
           />
           <main className="w-full px-5 sm:px-14 py-4">
-            <ProfileSection studentData={user} />
+            <ProfileSection studentData={studentProfile} />
             <div className="w-full h-full flex flex-col lg:flex-row gap-4 items-stretch">
               <div className="w-full lg:w-[70%]">
-                <MainContent studentData={user} dashboardData={dashboardData} />
+                <MainContent studentData={studentProfile} dashboardData={dashboardData} />
               </div>
               <div className="w-full lg:w-[30%]">
-                <ContactInfo studentData={user} />
+                <ContactInfo studentData={studentProfile} />
               </div>
             </div>
           </main>

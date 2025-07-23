@@ -38,7 +38,6 @@ html, body {
     @apply hidden
 }
 
-
 /* Swiper */
 
 .swiper-button-prev,
@@ -76,7 +75,6 @@ html, body {
 }
 
 .swiper-pagination {
-  bottom: -30px !important;
   position: absolute !important;
   width: 100%;
   text-align: center;
