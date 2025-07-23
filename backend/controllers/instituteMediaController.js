@@ -43,6 +43,11 @@ export const handleImageUpload = async (req, res) => {
       return handleError(res, 400, "No image file provided", "NO_IMAGE");
     }
 
+    // logger.info("Image uploaded successfully", {
+    //   url: req.file.path,
+    //   instituteId: req.institute?.id || "unknown",
+    // });
+
     return res.status(200).json({
       status: true,
       url: req.file.path,

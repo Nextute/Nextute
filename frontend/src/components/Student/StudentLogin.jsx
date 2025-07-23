@@ -11,6 +11,42 @@ import PhoneNumberValidator from "../../context/PhoneNumberValidator.jsx";
 
 const sanitizeInput = (input) => input.replace(/[<>]/g, "");
 
+const cleanPhoneNumber = (phone) => phone.replace(/[\s.-]/g, "");
+
+const validateInput = (input, defaultCountry = "IN") => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (emailRegex.test(input)) {
+    return { type: "email", isValid: true, error: "" };
+  }
+  try {
+    const cleanedPhone = cleanPhoneNumber(input);
+    const phoneNumber = parsePhoneNumberFromString(
+      cleanedPhone,
+      defaultCountry
+    );
+    if (phoneNumber && phoneNumber.isValid()) {
+      return {
+        type: "phone",
+        isValid: true,
+        formatted: phoneNumber.formatInternational(),
+        error: "",
+      };
+    }
+    return {
+      type: "phone",
+      isValid: false,
+      error:
+        "Invalid phone number format. Please enter a valid 10-digit number.",
+    };
+  } catch {
+    return {
+      type: "phone",
+      isValid: false,
+      error: "Error validating phone number. Please check your input.",
+    };
+  }
+};
+
 const StudentLogin = () => {
   const [loginInput, setLoginInput] = useState("");
   const [password, setPassword] = useState("");

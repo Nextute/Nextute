@@ -66,6 +66,7 @@ export const signup = [
 
       const institute = await createInstitute(instituteData);
       const token = createSecretToken(institute.id, "institute");
+      console.log("Signup - Insitute:", institute, "Token:", token); // Debug
 
       res.cookie("authToken", token, {
         httpOnly: true,
@@ -161,6 +162,67 @@ export const verifyCode = [
         "Server error during email verification",
         "VERIFICATION_ERROR"
       );
+    }
+  },
+];
+
+// Resend verification code to the institute's email
+export const resendVerificationCode = [
+  body("email").isEmail().normalizeEmail().withMessage("Invalid email format"),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      console.log("DEBUG: Resend validation error:", errors.array());
+      return handleError(res, 400, errors.array()[0].msg, "VALIDATION_ERROR");
+    }
+
+    try {
+      const { email } = req.body;
+      console.log("DEBUG: Resending verification code for:", email);
+
+      const institute = await findInstituteByEmail(email);
+      if (!institute) {
+        console.log("DEBUG: Institute not found for email:", email);
+        return handleError(
+          res,
+          404,
+          "Institute not found",
+          "INSTITUTE_NOT_FOUND"
+        );
+      }
+
+      if (institute.is_verified) {
+        console.log("DEBUG: Email already verified for:", email);
+        return handleError(
+          res,
+          400,
+          "Email already verified",
+          "ALREADY_VERIFIED"
+        );
+      }
+
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+      await updateInstituteSection(institute.id, "code", code);
+      await updateInstituteSection(institute.id, "code_expires_at", expiresAt);
+
+      console.log("DEBUG: Generated new code:", code, "Expires at:", expiresAt);
+
+      try {
+        await sendVerificationEmail(email, code);
+        console.log("DEBUG: Verification email sent to:", email);
+        return res.status(200).json({
+          status: true,
+          message: "Verification code resent",
+        });
+      } catch (emailErr) {
+        console.error("DEBUG: Email sending error:", emailErr);
+        return handleError(res, 500, "Failed to send email", "EMAIL_ERROR");
+      }
+    } catch (err) {
+      console.error("DEBUG: Resend error:", err);
+      return handleError(res, 500, "Server error", "RESEND_ERROR");
     }
   },
 ];
@@ -278,6 +340,7 @@ export const updateProfileSection = [
     if (section === "basic-info") {
       if (!value.institute_name) {
         throw new Error("Institute name is required");
+
       }
     }
 
@@ -433,6 +496,7 @@ export const getAllInstitutesData = async (req, res) => {
   }
 };
 
+
 // Fetch institute by ID
 export const getInstituteById = async (req, res) => {
   try {
@@ -462,3 +526,4 @@ export const getInstituteById = async (req, res) => {
     return handleError(res, 500, "Internal server error", "INSTITUTE_ERROR");
   }
 };
+

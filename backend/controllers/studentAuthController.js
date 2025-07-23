@@ -10,7 +10,7 @@ import {
 import { handleError } from "../utils/errorHandler.js";
 import { body, validationResult } from "express-validator";
 
-// Signup a new student
+//Singup a new student
 export const signup = [
   body("name").trim().notEmpty().withMessage("Name is required"),
   body("email").isEmail().normalizeEmail().withMessage("Invalid email format"),

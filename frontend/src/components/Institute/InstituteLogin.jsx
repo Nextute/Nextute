@@ -11,6 +11,51 @@ import PhoneNumberValidator from "../../context/PhoneNumberValidator.jsx";
 
 const sanitizeInput = (input) => input.replace(/[<>]/g, "");
 
+const cleanPhoneNumber = (phone) => phone.replace(/[\s.-]/g, "");
+
+const validateInput = (input, defaultCountry = "IN") => {
+  if (input.includes("@")) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const isValid = emailRegex.test(input);
+    return {
+      type: "email",
+      isValid,
+      value: input,
+      error: isValid ? "" : "Please enter a valid email address.",
+    };
+  } else {
+    try {
+      const cleanedPhone = cleanPhoneNumber(input);
+      const phoneNumber = parsePhoneNumberFromString(
+        cleanedPhone,
+        defaultCountry
+      );
+      if (phoneNumber && phoneNumber.isValid()) {
+        return {
+          type: "phone",
+          isValid: true,
+          value: phoneNumber.number,
+          error: "",
+        };
+      }
+      return {
+        type: "phone",
+        isValid: false,
+        value: input,
+        error: "Invalid phone number format.",
+      };
+    } catch {
+      return {
+        type: "phone",
+        isValid: false,
+        value: input,
+        error: "Error validating phone number.",
+      };
+    }
+  }
+};
+
+
 const InstituteLogin = () => {
   const [loginInput, setLoginInput] = useState("");
   const [password, setPassword] = useState("");
@@ -49,6 +94,7 @@ const InstituteLogin = () => {
       };
     }
   };
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -90,7 +136,12 @@ const InstituteLogin = () => {
 
     const validation = validateInput(sanitizedLoginInput);
     if (!validation.isValid) {
-      setErrors((prev) => ({ ...prev, loginInput: validation.error }));
+
+      setErrors((prev) => ({
+        ...prev,
+        loginInput: validation.error,
+      }));
+
       return toast.error(validation.error);
     }
 
@@ -106,15 +157,19 @@ const InstituteLogin = () => {
     if (validation.type === "email") {
       payload.email = sanitizedLoginInput;
     } else {
+
       payload.phone = validation.value;
+
     }
 
     setLoading(true);
     try {
+
       const response = await axios.post(
         `${VITE_BACKEND_BASE_URL}/api/institutes/auth/login`,
         payload,
         {
+
           withCredentials: true,
           headers: { "Content-Type": "application/json" },
         }
@@ -143,13 +198,36 @@ const InstituteLogin = () => {
         sessionStorage.removeItem("verify_user_type");
 
         navigate("/");
+        
+//           method: "POST",
+//           headers: { "Content-Type": "application/json" },
+//           credentials: "include",
+//           body: JSON.stringify(payload),
+//         }
+//       );
+
+//       const data = await response.json();
+
+//       if (!response.ok) {
+//         throw new Error(data.message || "Login failed.");
+
       }
+
+      toast.success("Login successful!");
+      setUser(data.user);
+      setUserType("institute");
+      setShouldFetchUser(true);
+      setShowLogin(false);
+      resetForm();
+      navigate("/");
     } catch (error) {
+
       const message =
         error.response?.status === 401
           ? "Invalid credentials."
           : error.response?.data?.message || "Login failed. Please try again.";
       toast.error(message);
+
     } finally {
       setLoading(false);
     }
@@ -178,7 +256,9 @@ const InstituteLogin = () => {
               Sign Up
             </button>
           </div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl text-[#204B55] font-semibold mb-8">
+
+          <h1 className="text-3xl sm:text-4lg lg:text-5xl text-[#204B55] font-semibold mb-8">
+
             Institute Login
           </h1>
 

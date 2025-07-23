@@ -258,6 +258,19 @@ const StudentSignup = () => {
       } else {
         throw new Error("Unexpected response status: " + response.status);
       }
+
+//       toast.success("Registration successful! Please verify your email.");
+//       setUser(data.user);
+//       setUserType("student");
+//       setShowSignup(false);
+//       setShowEmailVerification(true);
+//       setShouldFetchUser(true);
+//       resetForm();
+//       localStorage.setItem("verify_email", data.user.email);
+//       localStorage.setItem("verify_user_type", "student");
+
+//       navigate("/verify");
+
     } catch (error) {
       console.error("❌ Signup error details:", {
         message: error.message,

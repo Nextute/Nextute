@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import Card from "./Card";
 import HorizontalCard from "./HorizontalCard";
@@ -96,6 +95,7 @@ const Ad = () => {
           .map((institute) => (
             <Card key={institute.id} institute={institute} />
           ))}
+
       </div>
 
     </>

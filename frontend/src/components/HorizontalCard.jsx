@@ -1,10 +1,10 @@
-
 import { useNavigate } from "react-router-dom";
 import { FaPhoneAlt, FaWhatsapp, FaMapMarkerAlt } from "react-icons/fa";
 import { BsChatTextFill } from "react-icons/bs";
 import { assets } from "../assets/assets";
 
 const HorizontalCard = ({ id, name, address, tags, contact, image }) => {
+
   const navigate = useNavigate();
 
   return (

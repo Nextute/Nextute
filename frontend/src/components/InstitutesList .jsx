@@ -1,3 +1,4 @@
+import React from "react";
 import HorizontalCard from "./HorizontalCard";
 import { useContext } from "react";
 import { AppContext } from "../context/AppContext";

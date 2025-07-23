@@ -14,6 +14,7 @@ const useInstitutes = (baseURL) => {
     const fetchData = async () => {
       setLoading(true);
       try {
+
         const res = await axios.get(
           `${baseURL}/api/institutes/all-institutes`,
           { withCredentials: true }
@@ -23,6 +24,7 @@ const useInstitutes = (baseURL) => {
           setInstitutes(res.data.data);
           setInstitutesLoaded(true);
         } else {
+
           throw new Error(res.data.message || "Data fetch failed");
         }
       } catch (err) {
@@ -31,12 +33,14 @@ const useInstitutes = (baseURL) => {
           err.response?.data?.message ||
             "Unable to load institutes. Please try again later."
         );
+
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
+
   }, [institutesLoaded, baseURL, setInstitutes, setInstitutesLoaded]);
 
   return { institutes, loading, error };

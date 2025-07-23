@@ -175,7 +175,9 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\Users\\evas1\\OneDrive\\Desktop\\Computer\\Web\\Nextute\\backend\\db\\generated\\prisma",
+
+      "value": "D:\\GitHub Dekstop\\Nextute\\backend\\db\\generated\\prisma",
+
       "fromEnvVar": null
     },
     "config": {
@@ -189,7 +191,9 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Users\\evas1\\OneDrive\\Desktop\\Computer\\Web\\Nextute\\backend\\prisma\\schema.prisma",
+
+    "sourceFilePath": "D:\\GitHub Dekstop\\Nextute\\backend\\prisma\\schema.prisma",
+
     "isCustomOutput": true
   },
   "relativeEnvPaths": {

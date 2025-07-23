@@ -25,6 +25,7 @@ const AppContextProvider = ({ children }) => {
   const [institutesLoaded, setInstitutesLoaded] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
 
+
   // Helper to get token from cookies
   const getToken = () => {
     const token = document.cookie
@@ -103,6 +104,7 @@ const AppContextProvider = ({ children }) => {
       } finally {
         setLoading(false);
         setShouldFetchUser(false);
+
       }
     },
     [shouldFetchUser, VITE_BACKEND_BASE_URL]

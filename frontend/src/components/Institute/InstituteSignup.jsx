@@ -8,6 +8,9 @@ import { AppContext } from "../../context/AppContext.jsx";
 import PhoneNumberValidator from "../../context/PhoneNumberValidator.jsx";
 import axios from "axios";
 
+import { useNavigate } from "react-router-dom";
+
+
 const sanitizeInput = (input) => input.replace(/[<>]/g, "");
 
 const InstituteSignup = () => {
@@ -39,6 +42,15 @@ const InstituteSignup = () => {
   } = useContext(AppContext);
 
   const navigate = useNavigate();
+
+  const {
+    VITE_BACKEND_BASE_URL,
+    setShowEmailVerification,
+    setUser,
+    setUserType,
+    setShowSignup,
+    setShouldFetchUser,
+  } = useContext(AppContext);
 
   const validateField = (name, value) => {
     switch (name) {
@@ -116,12 +128,20 @@ const InstituteSignup = () => {
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
+    console.log("DEBUG: Starting signup submission");
+    console.log("DEBUG: Form data:", {
+      institute_name,
+      email,
+      contact,
+      password,
+    });
 
     const newErrors = {
       instituteName: validateField("instituteName", instituteName),
       email: validateField("email", email),
       contact: validateField("contact", contact),
       password: validateField("password", password),
+
       confirmPassword: validateField("confirmPassword", confirmPassword),
     };
 
@@ -136,9 +156,45 @@ const InstituteSignup = () => {
       setErrors((prev) => ({ ...prev, contact: phoneValidation.error }));
       toast.error(phoneValidation.error);
       return;
+
+//       confirmPassword: validateField(
+//         "confirmPassword",
+//         confirmPassword,
+//         password
+//       ),
+//     };
+
+//     console.log("DEBUG: Validation errors:", newErrors);
+
+//     if (Object.values(newErrors).some((error) => error)) {
+//       setErrors(newErrors);
+//       toast.error("Please fix the errors in the form.");
+//       console.log("DEBUG: Form validation failed");
+//       return;
+//     }
+
+//     if (password !== confirmPassword) {
+//       setErrors((prev) => ({
+//         ...prev,
+//         confirmPassword: "Passwords do not match.",
+//       }));
+//       console.log("DEBUG: Passwords do not match");
+//       return;
+//     }
+
+//     if (contact) {
+//       const phoneValidation = PhoneNumberValidator(contact);
+//       console.log("DEBUG: Phone validation:", phoneValidation);
+//       if (!phoneValidation.isValid) {
+//         setErrors((prev) => ({ ...prev, contact: phoneValidation.error }));
+//         console.log("DEBUG: Phone validation failed");
+//         return;
+//       }
+
     }
 
     setLoading(true);
+    console.log("DEBUG: Sending signup request");
     try {
       const formData = {
         institute_name: instituteName,
@@ -150,6 +206,7 @@ const InstituteSignup = () => {
       const response = await axios.post(
         `${VITE_BACKEND_BASE_URL}/api/institutes/signup`,
         formData,
+
         { withCredentials: true }
       );
 
@@ -182,8 +239,45 @@ const InstituteSignup = () => {
           ? "Email already registered."
           : error.response?.data?.message || "Something went wrong.";
       toast.error(message);
+
+//         {
+//           headers: {
+//             "Content-Type": "application/json",
+//           },
+//           withCredentials: true, // Send cookies
+//         }
+//       );
+
+//       console.log("DEBUG: Signup response:", response.data);
+
+//       if (response.status === 201) {
+//         const userData = response.data?.user || {}; // get user if backend sends it
+//         toast.success("Registration successful! Please verify your email.");
+
+//         // Context updates for navbar
+//         setUser(userData);
+//         setUserType("institute");
+//         setShouldFetchUser(true);
+//         setShowSignup(false);
+//         setShowEmailVerification(true);
+//         localStorage.setItem("verify_email", data.user.email);
+//         localStorage.setItem("verify_user_type", "institute");
+
+//         navigate("/verify", { state: { email, userType: "institute" } });
+//       } else {
+//         console.error("DEBUG: Signup failed:", response.data.message);
+//         toast.error(response.data.message || "Registration failed.");
+//       }
+//     } catch (error) {
+//       console.error("DEBUG: Signup error:", error.response?.data || error);
+//       toast.error(
+//         error.response?.data?.message ||
+//           "Something went wrong. Please try again later."
+//       );
+
     } finally {
       setLoading(false);
+      console.log("DEBUG: Signup request completed");
     }
   };
 

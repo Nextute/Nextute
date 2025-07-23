@@ -32,10 +32,14 @@ import FAQPage from "./pages/FAQPage";
 import BlogPage from "./pages/BlogPage";
 import InstituteOverviewPage from "./pages/InstituteRegistration/InstituteOverviewPage";
 import ServicesPage from "./pages/ServicesPage";
+
 import InstitutesList from "./components/InstitutesList "; // Fixed import
 
 import ErrorBoundary from "./components/ErrorBoundary"; // Add this file
 import SearchPage from "./pages/SearchPage";
+
+import InstitutesList from "./components/InstitutesList ";
+
 
 const App = () => {
   // Use correct state names, not setters
@@ -94,6 +98,7 @@ const App = () => {
         {showSignup && <SignupPopup />}
         <Toaster />
       </ErrorBoundary>
+
     </div>
   );
 };

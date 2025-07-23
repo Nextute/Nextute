@@ -1,2 +1,19 @@
 .env
-node_modules
+node_modules/
+
+# Log files
+*.log
+
+# Prisma generated files
+db/generated/prisma/*
+!db/generated/prisma/schema.prisma
+
+# Prisma migration lock file
+prisma/migrations/migration_lock.toml
+
+# Common temporary files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
