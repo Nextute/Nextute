@@ -8,12 +8,10 @@ import { AppContext } from "../../context/AppContext.jsx";
 import PhoneNumberValidator from "../../context/PhoneNumberValidator.jsx";
 import axios from "axios";
 
-import { useNavigate } from "react-router-dom";
-
-
 const sanitizeInput = (input) => input.replace(/[<>]/g, "");
 
 const InstituteSignup = () => {
+  const navigate = useNavigate();
   const [instituteName, setInstituteName] = useState("");
   const [email, setEmail] = useState("");
   const [contact, setContact] = useState("");
@@ -31,17 +29,6 @@ const InstituteSignup = () => {
     password: "",
     confirmPassword: "",
   });
-
-  const {
-    VITE_BACKEND_BASE_URL,
-    setShowEmailVerification,
-    setUser,
-    setUserType,
-    setShowSignup,
-    setShouldFetchUser,
-  } = useContext(AppContext);
-
-  const navigate = useNavigate();
 
   const {
     VITE_BACKEND_BASE_URL,
