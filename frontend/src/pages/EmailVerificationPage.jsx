@@ -297,23 +297,23 @@ const EmailVerificationPage = () => {
       setError(message);
       toast.error(message);
 
-//   const handleResend = async (e) => {
-//     e.preventDefault();
-//     if (resendCooldown > 0 || !email) return;
+  const handleResend = async (e) => {
+    e.preventDefault();
+    if (resendCooldown > 0 || !email) return;
 
-//     setIsLoading(true);
-//     try {
-//       await axios.post(
-//         `${VITE_BACKEND_BASE_URL}${getResendEndpoint()}`,
-//         { email },
-//         { withCredentials: true }
-//       );
-//       toast.success("New code sent to your email");
-//       setResendCooldown(60);
-//       setCode(["", "", "", "", "", ""]);
-//       inputRefs[0].current?.focus();
-//     } catch (err) {
-//       toast.error(err.response?.data?.message || "Failed to resend code");
+    setIsLoading(true);
+    try {
+      await axios.post(
+        `${VITE_BACKEND_BASE_URL}${getResendEndpoint()}`,
+        { email },
+        { withCredentials: true }
+      );
+      toast.success("New code sent to your email");
+      setResendCooldown(60);
+      setCode(["", "", "", "", "", ""]);
+      inputRefs[0].current?.focus();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to resend code");
 
     } finally {
       setLoading(false);
@@ -340,25 +340,25 @@ const EmailVerificationPage = () => {
           <span className="font-semibold">{email || "your email"}</span>. Please
           enter it below.
 
-//     <div className="min-h-screen bg-[url('/src/assets/signup_bg.png')] bg-cover bg-center flex items-center justify-center relative">
-//       <div className="absolute inset-0 backdrop-blur-sm bg-black/30" />
-//       <div className="relative bg-white/95 border border-gray-200 rounded-2xl shadow-xl p-6 max-w-lg w-full">
-//         <div className="flex justify-center mb-4">
-//           <img src={assets.logo} alt="Logo" className="w-36" />
-//         </div>
-//         <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">
-//           Verify Your Email
-//         </h2>
-//         <p className="text-center text-sm text-gray-600 mb-1">
-//           We sent a 6-digit code to <span className="font-medium">{email}</span>
-//         </p>
-//         <p className="text-center text-sm text-gray-500 mb-3">
-//           Verifying as <span className="font-semibold capitalize">{type}</span>
-//         </p>
-//         <p className="text-center text-sm text-gray-700 mb-6">
-//           Enter the code below to confirm your account.
-
-        </p>
+          {/*
+     <div className="min-h-screen bg-[url('/src/assets/signup_bg.png')] bg-cover bg-center flex items-center justify-center relative">
+    <div className="absolute inset-0 backdrop-blur-sm bg-black/30" />
+       <div className="relative bg-white/95 border border-gray-200 rounded-2xl shadow-xl p-6 max-w-lg w-full">
+        <div className="flex justify-center mb-4">
+          <img src={assets.logo} alt="Logo" className="w-36" />
+        </div>
+       <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">
+           Verify Your Email
+         </h2>
+         <p className="text-center text-sm text-gray-600 mb-1">
+           We sent a 6-digit code to <span className="font-medium">{email}</span>
+         </p>
+         <p className="text-center text-sm text-gray-500 mb-3">
+           Verifying as <span className="font-semibold capitalize">{type}</span>
+         </p>
+         <p className="text-center text-sm text-gray-700 mb-6"> 
+           Enter the code below to confirm your account.
+         </p> */}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="flex justify-center gap-2 sm:gap-3">
