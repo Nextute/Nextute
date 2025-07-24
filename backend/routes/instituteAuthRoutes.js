@@ -16,8 +16,6 @@ import {
   getInstituteById,
   getAllInstitutesData,
   resendVerificationCode,
-  getAllInstitutesData
-
 } from "../controllers/instituteAuthController.js";
 import instituteAuth from "../middlewares/instituteAuthMiddleware.js";
 import { validateEmailDomain } from "../middlewares/emailValidationMiddleware.js";
