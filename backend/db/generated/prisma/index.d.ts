@@ -2126,7 +2126,6 @@ export namespace Prisma {
 
   export type StudentMinAggregateOutputType = {
     id: string | null
-    student_id: string | null
     name: string | null
     email: string | null
     password: string | null
@@ -2137,14 +2136,14 @@ export namespace Prisma {
     date_of_birth: Date | null
     is_verified: boolean | null
     code: string | null
-    code_expires_at: Date | null
     created_at: Date | null
     updated_at: Date | null
+    code_expires_at: Date | null
+    student_id: string | null
   }
 
   export type StudentMaxAggregateOutputType = {
     id: string | null
-    student_id: string | null
     name: string | null
     email: string | null
     password: string | null
@@ -2155,14 +2154,14 @@ export namespace Prisma {
     date_of_birth: Date | null
     is_verified: boolean | null
     code: string | null
-    code_expires_at: Date | null
     created_at: Date | null
     updated_at: Date | null
+    code_expires_at: Date | null
+    student_id: string | null
   }
 
   export type StudentCountAggregateOutputType = {
     id: number
-    student_id: number
     name: number
     email: number
     password: number
@@ -2173,16 +2172,16 @@ export namespace Prisma {
     date_of_birth: number
     is_verified: number
     code: number
-    code_expires_at: number
     created_at: number
     updated_at: number
+    code_expires_at: number
+    student_id: number
     _all: number
   }
 
 
   export type StudentMinAggregateInputType = {
     id?: true
-    student_id?: true
     name?: true
     email?: true
     password?: true
@@ -2193,14 +2192,14 @@ export namespace Prisma {
     date_of_birth?: true
     is_verified?: true
     code?: true
-    code_expires_at?: true
     created_at?: true
     updated_at?: true
+    code_expires_at?: true
+    student_id?: true
   }
 
   export type StudentMaxAggregateInputType = {
     id?: true
-    student_id?: true
     name?: true
     email?: true
     password?: true
@@ -2211,14 +2210,14 @@ export namespace Prisma {
     date_of_birth?: true
     is_verified?: true
     code?: true
-    code_expires_at?: true
     created_at?: true
     updated_at?: true
+    code_expires_at?: true
+    student_id?: true
   }
 
   export type StudentCountAggregateInputType = {
     id?: true
-    student_id?: true
     name?: true
     email?: true
     password?: true
@@ -2229,9 +2228,10 @@ export namespace Prisma {
     date_of_birth?: true
     is_verified?: true
     code?: true
-    code_expires_at?: true
     created_at?: true
     updated_at?: true
+    code_expires_at?: true
+    student_id?: true
     _all?: true
   }
 
@@ -2309,7 +2309,6 @@ export namespace Prisma {
 
   export type StudentGroupByOutputType = {
     id: string
-    student_id: string
     name: string
     email: string
     password: string
@@ -2320,9 +2319,10 @@ export namespace Prisma {
     date_of_birth: Date
     is_verified: boolean
     code: string | null
-    code_expires_at: Date | null
     created_at: Date
     updated_at: Date
+    code_expires_at: Date | null
+    student_id: string
     _count: StudentCountAggregateOutputType | null
     _min: StudentMinAggregateOutputType | null
     _max: StudentMaxAggregateOutputType | null
@@ -2344,7 +2344,6 @@ export namespace Prisma {
 
   export type StudentSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
-    student_id?: boolean
     name?: boolean
     email?: boolean
     password?: boolean
@@ -2355,14 +2354,14 @@ export namespace Prisma {
     date_of_birth?: boolean
     is_verified?: boolean
     code?: boolean
-    code_expires_at?: boolean
     created_at?: boolean
     updated_at?: boolean
+    code_expires_at?: boolean
+    student_id?: boolean
   }, ExtArgs["result"]["student"]>
 
   export type StudentSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
-    student_id?: boolean
     name?: boolean
     email?: boolean
     password?: boolean
@@ -2373,14 +2372,14 @@ export namespace Prisma {
     date_of_birth?: boolean
     is_verified?: boolean
     code?: boolean
-    code_expires_at?: boolean
     created_at?: boolean
     updated_at?: boolean
+    code_expires_at?: boolean
+    student_id?: boolean
   }, ExtArgs["result"]["student"]>
 
   export type StudentSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
-    student_id?: boolean
     name?: boolean
     email?: boolean
     password?: boolean
@@ -2391,14 +2390,14 @@ export namespace Prisma {
     date_of_birth?: boolean
     is_verified?: boolean
     code?: boolean
-    code_expires_at?: boolean
     created_at?: boolean
     updated_at?: boolean
+    code_expires_at?: boolean
+    student_id?: boolean
   }, ExtArgs["result"]["student"]>
 
   export type StudentSelectScalar = {
     id?: boolean
-    student_id?: boolean
     name?: boolean
     email?: boolean
     password?: boolean
@@ -2409,19 +2408,19 @@ export namespace Prisma {
     date_of_birth?: boolean
     is_verified?: boolean
     code?: boolean
-    code_expires_at?: boolean
     created_at?: boolean
     updated_at?: boolean
+    code_expires_at?: boolean
+    student_id?: boolean
   }
 
-  export type StudentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "student_id" | "name" | "email" | "password" | "gender" | "phone_number" | "address" | "course" | "date_of_birth" | "is_verified" | "code" | "code_expires_at" | "created_at" | "updated_at", ExtArgs["result"]["student"]>
+  export type StudentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "email" | "password" | "gender" | "phone_number" | "address" | "course" | "date_of_birth" | "is_verified" | "code" | "created_at" | "updated_at" | "code_expires_at" | "student_id", ExtArgs["result"]["student"]>
 
   export type $StudentPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Student"
     objects: {}
     scalars: $Extensions.GetPayloadResult<{
       id: string
-      student_id: string
       name: string
       email: string
       password: string
@@ -2432,9 +2431,10 @@ export namespace Prisma {
       date_of_birth: Date
       is_verified: boolean
       code: string | null
-      code_expires_at: Date | null
       created_at: Date
       updated_at: Date
+      code_expires_at: Date | null
+      student_id: string
     }, ExtArgs["result"]["student"]>
     composites: {}
   }
@@ -2859,7 +2859,6 @@ export namespace Prisma {
    */
   interface StudentFieldRefs {
     readonly id: FieldRef<"Student", 'String'>
-    readonly student_id: FieldRef<"Student", 'String'>
     readonly name: FieldRef<"Student", 'String'>
     readonly email: FieldRef<"Student", 'String'>
     readonly password: FieldRef<"Student", 'String'>
@@ -2870,9 +2869,10 @@ export namespace Prisma {
     readonly date_of_birth: FieldRef<"Student", 'DateTime'>
     readonly is_verified: FieldRef<"Student", 'Boolean'>
     readonly code: FieldRef<"Student", 'String'>
-    readonly code_expires_at: FieldRef<"Student", 'DateTime'>
     readonly created_at: FieldRef<"Student", 'DateTime'>
     readonly updated_at: FieldRef<"Student", 'DateTime'>
+    readonly code_expires_at: FieldRef<"Student", 'DateTime'>
+    readonly student_id: FieldRef<"Student", 'String'>
   }
     
 
@@ -3281,7 +3281,6 @@ export namespace Prisma {
 
   export const StudentScalarFieldEnum: {
     id: 'id',
-    student_id: 'student_id',
     name: 'name',
     email: 'email',
     password: 'password',
@@ -3292,9 +3291,10 @@ export namespace Prisma {
     date_of_birth: 'date_of_birth',
     is_verified: 'is_verified',
     code: 'code',
-    code_expires_at: 'code_expires_at',
     created_at: 'created_at',
-    updated_at: 'updated_at'
+    updated_at: 'updated_at',
+    code_expires_at: 'code_expires_at',
+    student_id: 'student_id'
   };
 
   export type StudentScalarFieldEnum = (typeof StudentScalarFieldEnum)[keyof typeof StudentScalarFieldEnum]
@@ -3544,7 +3544,6 @@ export namespace Prisma {
     OR?: StudentWhereInput[]
     NOT?: StudentWhereInput | StudentWhereInput[]
     id?: UuidFilter<"Student"> | string
-    student_id?: StringFilter<"Student"> | string
     name?: StringFilter<"Student"> | string
     email?: StringFilter<"Student"> | string
     password?: StringFilter<"Student"> | string
@@ -3555,14 +3554,14 @@ export namespace Prisma {
     date_of_birth?: DateTimeFilter<"Student"> | Date | string
     is_verified?: BoolFilter<"Student"> | boolean
     code?: StringNullableFilter<"Student"> | string | null
-    code_expires_at?: DateTimeNullableFilter<"Student"> | Date | string | null
     created_at?: DateTimeFilter<"Student"> | Date | string
     updated_at?: DateTimeFilter<"Student"> | Date | string
+    code_expires_at?: DateTimeNullableFilter<"Student"> | Date | string | null
+    student_id?: StringFilter<"Student"> | string
   }
 
   export type StudentOrderByWithRelationInput = {
     id?: SortOrder
-    student_id?: SortOrder
     name?: SortOrder
     email?: SortOrder
     password?: SortOrder
@@ -3573,16 +3572,17 @@ export namespace Prisma {
     date_of_birth?: SortOrder
     is_verified?: SortOrder
     code?: SortOrderInput | SortOrder
-    code_expires_at?: SortOrderInput | SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
+    code_expires_at?: SortOrderInput | SortOrder
+    student_id?: SortOrder
   }
 
   export type StudentWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    student_id?: string
     email?: string
     phone_number?: string
+    student_id?: string
     AND?: StudentWhereInput | StudentWhereInput[]
     OR?: StudentWhereInput[]
     NOT?: StudentWhereInput | StudentWhereInput[]
@@ -3594,14 +3594,13 @@ export namespace Prisma {
     date_of_birth?: DateTimeFilter<"Student"> | Date | string
     is_verified?: BoolFilter<"Student"> | boolean
     code?: StringNullableFilter<"Student"> | string | null
-    code_expires_at?: DateTimeNullableFilter<"Student"> | Date | string | null
     created_at?: DateTimeFilter<"Student"> | Date | string
     updated_at?: DateTimeFilter<"Student"> | Date | string
-  }, "id" | "student_id" | "email" | "phone_number">
+    code_expires_at?: DateTimeNullableFilter<"Student"> | Date | string | null
+  }, "id" | "email" | "phone_number" | "student_id">
 
   export type StudentOrderByWithAggregationInput = {
     id?: SortOrder
-    student_id?: SortOrder
     name?: SortOrder
     email?: SortOrder
     password?: SortOrder
@@ -3612,9 +3611,10 @@ export namespace Prisma {
     date_of_birth?: SortOrder
     is_verified?: SortOrder
     code?: SortOrderInput | SortOrder
-    code_expires_at?: SortOrderInput | SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
+    code_expires_at?: SortOrderInput | SortOrder
+    student_id?: SortOrder
     _count?: StudentCountOrderByAggregateInput
     _max?: StudentMaxOrderByAggregateInput
     _min?: StudentMinOrderByAggregateInput
@@ -3625,7 +3625,6 @@ export namespace Prisma {
     OR?: StudentScalarWhereWithAggregatesInput[]
     NOT?: StudentScalarWhereWithAggregatesInput | StudentScalarWhereWithAggregatesInput[]
     id?: UuidWithAggregatesFilter<"Student"> | string
-    student_id?: StringWithAggregatesFilter<"Student"> | string
     name?: StringWithAggregatesFilter<"Student"> | string
     email?: StringWithAggregatesFilter<"Student"> | string
     password?: StringWithAggregatesFilter<"Student"> | string
@@ -3636,9 +3635,10 @@ export namespace Prisma {
     date_of_birth?: DateTimeWithAggregatesFilter<"Student"> | Date | string
     is_verified?: BoolWithAggregatesFilter<"Student"> | boolean
     code?: StringNullableWithAggregatesFilter<"Student"> | string | null
-    code_expires_at?: DateTimeNullableWithAggregatesFilter<"Student"> | Date | string | null
     created_at?: DateTimeWithAggregatesFilter<"Student"> | Date | string
     updated_at?: DateTimeWithAggregatesFilter<"Student"> | Date | string
+    code_expires_at?: DateTimeNullableWithAggregatesFilter<"Student"> | Date | string | null
+    student_id?: StringWithAggregatesFilter<"Student"> | string
   }
 
   export type InstituteCreateInput = {
@@ -3804,7 +3804,6 @@ export namespace Prisma {
 
   export type StudentCreateInput = {
     id?: string
-    student_id: string
     name: string
     email: string
     password: string
@@ -3815,14 +3814,14 @@ export namespace Prisma {
     date_of_birth: Date | string
     is_verified?: boolean
     code?: string | null
-    code_expires_at?: Date | string | null
     created_at?: Date | string
     updated_at?: Date | string
+    code_expires_at?: Date | string | null
+    student_id: string
   }
 
   export type StudentUncheckedCreateInput = {
     id?: string
-    student_id: string
     name: string
     email: string
     password: string
@@ -3833,14 +3832,14 @@ export namespace Prisma {
     date_of_birth: Date | string
     is_verified?: boolean
     code?: string | null
-    code_expires_at?: Date | string | null
     created_at?: Date | string
     updated_at?: Date | string
+    code_expires_at?: Date | string | null
+    student_id: string
   }
 
   export type StudentUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    student_id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
@@ -3851,14 +3850,14 @@ export namespace Prisma {
     date_of_birth?: DateTimeFieldUpdateOperationsInput | Date | string
     is_verified?: BoolFieldUpdateOperationsInput | boolean
     code?: NullableStringFieldUpdateOperationsInput | string | null
-    code_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    code_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    student_id?: StringFieldUpdateOperationsInput | string
   }
 
   export type StudentUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    student_id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
@@ -3869,14 +3868,14 @@ export namespace Prisma {
     date_of_birth?: DateTimeFieldUpdateOperationsInput | Date | string
     is_verified?: BoolFieldUpdateOperationsInput | boolean
     code?: NullableStringFieldUpdateOperationsInput | string | null
-    code_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    code_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    student_id?: StringFieldUpdateOperationsInput | string
   }
 
   export type StudentCreateManyInput = {
     id?: string
-    student_id: string
     name: string
     email: string
     password: string
@@ -3887,14 +3886,14 @@ export namespace Prisma {
     date_of_birth: Date | string
     is_verified?: boolean
     code?: string | null
-    code_expires_at?: Date | string | null
     created_at?: Date | string
     updated_at?: Date | string
+    code_expires_at?: Date | string | null
+    student_id: string
   }
 
   export type StudentUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
-    student_id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
@@ -3905,14 +3904,14 @@ export namespace Prisma {
     date_of_birth?: DateTimeFieldUpdateOperationsInput | Date | string
     is_verified?: BoolFieldUpdateOperationsInput | boolean
     code?: NullableStringFieldUpdateOperationsInput | string | null
-    code_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    code_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    student_id?: StringFieldUpdateOperationsInput | string
   }
 
   export type StudentUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
-    student_id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
@@ -3923,9 +3922,10 @@ export namespace Prisma {
     date_of_birth?: DateTimeFieldUpdateOperationsInput | Date | string
     is_verified?: BoolFieldUpdateOperationsInput | boolean
     code?: NullableStringFieldUpdateOperationsInput | string | null
-    code_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    code_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    student_id?: StringFieldUpdateOperationsInput | string
   }
 
   export type UuidFilter<$PrismaModel = never> = {
@@ -4191,7 +4191,6 @@ export namespace Prisma {
 
   export type StudentCountOrderByAggregateInput = {
     id?: SortOrder
-    student_id?: SortOrder
     name?: SortOrder
     email?: SortOrder
     password?: SortOrder
@@ -4202,14 +4201,14 @@ export namespace Prisma {
     date_of_birth?: SortOrder
     is_verified?: SortOrder
     code?: SortOrder
-    code_expires_at?: SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
+    code_expires_at?: SortOrder
+    student_id?: SortOrder
   }
 
   export type StudentMaxOrderByAggregateInput = {
     id?: SortOrder
-    student_id?: SortOrder
     name?: SortOrder
     email?: SortOrder
     password?: SortOrder
@@ -4220,14 +4219,14 @@ export namespace Prisma {
     date_of_birth?: SortOrder
     is_verified?: SortOrder
     code?: SortOrder
-    code_expires_at?: SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
+    code_expires_at?: SortOrder
+    student_id?: SortOrder
   }
 
   export type StudentMinOrderByAggregateInput = {
     id?: SortOrder
-    student_id?: SortOrder
     name?: SortOrder
     email?: SortOrder
     password?: SortOrder
@@ -4238,9 +4237,10 @@ export namespace Prisma {
     date_of_birth?: SortOrder
     is_verified?: SortOrder
     code?: SortOrder
-    code_expires_at?: SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
+    code_expires_at?: SortOrder
+    student_id?: SortOrder
   }
 
   export type StringFieldUpdateOperationsInput = {

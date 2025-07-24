@@ -1,8 +1,8 @@
-import { FaStar, FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn } from "react-icons/fa";
+import { FaStar } from "react-icons/fa";
 
 const TestimonialCard= () => {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="my-20 flex items-center justify-center px-4">
       <div className="polygon relative bg-gradient-to-t from-[#ffffff] to-[#e8f3e2] rounded-[60px] max-w-xl w-full p-8 pt-16 text-center shadow-lg">
 
         <div className="absolute top-[-40px] left-0 rounded-full w-24 h-24 flex items-center justify-center shadow-xl">
