@@ -38,7 +38,6 @@ import InstitutesList from "./components/InstitutesList "; // Fixed import
 import ErrorBoundary from "./components/ErrorBoundary"; // Add this file
 import SearchPage from "./pages/SearchPage";
 
-import InstitutesList from "./components/InstitutesList ";
 
 
 const App = () => {
