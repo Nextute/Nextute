@@ -117,7 +117,7 @@ const InstituteSignup = () => {
     e.preventDefault();
     console.log("DEBUG: Starting signup submission");
     console.log("DEBUG: Form data:", {
-      institute_name,
+      instituteName,
       email,
       contact,
       password,

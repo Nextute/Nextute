@@ -2779,3 +2779,17 @@
 {"level":"info","message":{"ip":"::1","method":"GET","timestamp":"2025-07-23T07:42:33.178Z","url":"/api/institutes/all-institutes"},"timestamp":"2025-07-23T07:42:33.179Z"}
 {"level":"info","message":{"ip":"::1","method":"GET","timestamp":"2025-07-23T17:52:18.993Z","url":"/api/institutes/all-institutes"},"timestamp":"2025-07-23T17:52:18.993Z"}
 
+{"level":"info","message":{"ip":"::1","method":"GET","timestamp":"2025-07-24T17:17:39.188Z","url":"/api/institutes/all-institutes"},"timestamp":"2025-07-24T17:17:39.189Z"}
+{"level":"info","message":{"ip":"::1","method":"GET","timestamp":"2025-07-24T17:17:44.438Z","url":"/api/institutes/all-institutes"},"timestamp":"2025-07-24T17:17:44.438Z"}
+{"level":"info","message":{"ip":"::1","method":"GET","timestamp":"2025-07-24T17:18:10.266Z","url":"/api/institutes/all-institutes"},"timestamp":"2025-07-24T17:18:10.267Z"}
+{"level":"info","message":{"ip":"::1","method":"GET","timestamp":"2025-07-24T17:35:28.007Z","url":"/api/institutes/all-institutes"},"timestamp":"2025-07-24T17:35:28.008Z"}
+{"level":"info","message":{"ip":"::1","method":"GET","timestamp":"2025-07-24T17:38:44.525Z","url":"/api/institutes/all-institutes"},"timestamp":"2025-07-24T17:38:44.525Z"}
+{"level":"info","message":{"ip":"::1","method":"GET","timestamp":"2025-07-24T17:38:53.679Z","url":"/api/institutes/817dbb53-0f10-4134-a1c1-a0c4d4e062e4"},"timestamp":"2025-07-24T17:38:53.679Z"}
+{"level":"info","message":{"ip":"::1","method":"GET","timestamp":"2025-07-24T17:38:54.316Z","url":"/api/institutes/817dbb53-0f10-4134-a1c1-a0c4d4e062e4"},"timestamp":"2025-07-24T17:38:54.316Z"}
+{"level":"info","message":{"ip":"::1","method":"GET","timestamp":"2025-07-24T17:38:54.567Z","url":"/api/institutes/817dbb53-0f10-4134-a1c1-a0c4d4e062e4"},"timestamp":"2025-07-24T17:38:54.568Z"}
+{"level":"info","message":{"ip":"::1","method":"GET","timestamp":"2025-07-24T17:39:02.009Z","url":"/api/institutes/all-institutes"},"timestamp":"2025-07-24T17:39:02.009Z"}
+{"level":"info","message":{"ip":"::1","method":"GET","timestamp":"2025-07-24T17:39:07.272Z","url":"/api/institutes/all-institutes"},"timestamp":"2025-07-24T17:39:07.272Z"}
+{"level":"info","message":{"ip":"::1","method":"GET","timestamp":"2025-07-24T17:39:15.786Z","url":"/api/institutes/all-institutes"},"timestamp":"2025-07-24T17:39:15.786Z"}
+{"level":"info","message":{"ip":"::1","method":"GET","timestamp":"2025-07-24T17:39:20.111Z","url":"/api/institutes/all-institutes"},"timestamp":"2025-07-24T17:39:20.111Z"}
+{"level":"info","message":{"ip":"::1","method":"GET","timestamp":"2025-07-24T17:39:27.708Z","url":"/api/institutes/all-institutes"},"timestamp":"2025-07-24T17:39:27.708Z"}
+{"level":"info","message":{"ip":"::1","method":"GET","timestamp":"2025-07-24T17:39:35.795Z","url":"/api/institutes/all-institutes"},"timestamp":"2025-07-24T17:39:35.795Z"}
