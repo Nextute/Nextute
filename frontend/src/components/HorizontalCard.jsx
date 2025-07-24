@@ -3,13 +3,14 @@ import { FaPhoneAlt, FaWhatsapp, FaMapMarkerAlt } from "react-icons/fa";
 import { BsChatTextFill } from "react-icons/bs";
 import { assets } from "../assets/assets";
 
-const HorizontalCard = ({ name, address, tags, contact, image }) => {
+const HorizontalCard = ({ id, name, address, tags, contact, image }) => {
+
   const navigate = useNavigate();
 
   return (
     <div
       className="flex flex-col md:flex-row items-start bg-white border border-gray-300 rounded-2xl shadow-sm max-w-2xl sm:max-w-3xl w-full mx-auto my-2 sm:my-4 hover:scale-105 hover:shadow-lg transition-all duration-300 cursor-pointer"
-      onClick={() => navigate("/institute/overview")}
+      onClick={() => navigate(`/institute/overview/${id}`)}
     >
       <div className="w-full md:w-5/12 aspect-[4/3] p-2 sm:p-3">
         <img

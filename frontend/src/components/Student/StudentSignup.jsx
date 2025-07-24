@@ -6,7 +6,7 @@ import { toast } from "react-hot-toast";
 import PasswordStrength from "../../context/PasswordStrength.jsx";
 import { AppContext } from "../../context/AppContext.jsx";
 import PhoneNumberValidator from "../../context/PhoneNumberValidator.jsx";
-import Cookies from "js-cookie";
+import axios from "axios";
 
 const sanitizeInput = (input) => input.replace(/[<>]/g, "");
 
@@ -62,13 +62,19 @@ const StudentSignup = () => {
   const validateField = (name, value) => {
     switch (name) {
       case "name":
-        return value.length < 2 ? "Name must be at least 2 characters." : "";
+        return !value.trim()
+          ? "Name is required."
+          : value.length < 2
+          ? "Name must be at least 2 characters."
+          : "";
       case "email":
+        if (!value.trim()) return "Email is required.";
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return !emailRegex.test(value)
           ? "Please enter a valid email address."
           : "";
       case "phoneNumber":
+        if (!value.trim()) return "Phone number is required.";
         const phoneValidation = PhoneNumberValidator(value);
         return phoneValidation.isValid ? "" : phoneValidation.error;
       case "dateOfBirth":
@@ -76,9 +82,13 @@ const StudentSignup = () => {
       case "gender":
         return !value ? "Please select a gender." : "";
       case "password":
-        return value.length < 8
+        return !value
+          ? "Password is required."
+          : value.length < 8
           ? "Password must be at least 8 characters."
           : "";
+      case "confirmPassword":
+        return value !== password ? "Passwords do not match." : "";
       default:
         return "";
     }
@@ -147,8 +157,7 @@ const StudentSignup = () => {
       dateOfBirth: validateField("dateOfBirth", dateOfBirth),
       gender: validateField("gender", gender),
       password: validateField("password", password),
-      confirmPassword:
-        password !== confirmPassword ? "Passwords do not match." : "",
+      confirmPassword: validateField("confirmPassword", confirmPassword),
     };
 
     if (Object.values(newErrors).some(Boolean)) {
@@ -165,10 +174,23 @@ const StudentSignup = () => {
     }
 
     setLoading(true);
+    console.log("🚀 Starting student signup process:", {
+      email: email,
+      name: name,
+      phoneNumber: phoneValidation.e164 || phoneNumber,
+      timestamp: new Date().toISOString()
+    });
+    
     try {
       const dob = new Date(dateOfBirth);
       if (isNaN(dob.getTime())) {
-        throw new Error("Invalid date of birth.");
+        console.error("❌ Invalid date of birth provided:", dateOfBirth);
+        setErrors((prev) => ({
+          ...prev,
+          dateOfBirth: "Invalid date of birth.",
+        }));
+        toast.error("Invalid date of birth.");
+        return;
       }
 
       const formData = {
@@ -180,55 +202,102 @@ const StudentSignup = () => {
         password,
       };
 
-      const response = await fetch(
+      console.log("📤 Sending signup request to backend:", {
+        url: `${VITE_BACKEND_BASE_URL}/api/students/signup`,
+        email: formData.email,
+        name: formData.name,
+        phoneNumber: formData.phoneNumber,
+        dateOfBirth: formData.dateOfBirth,
+        gender: formData.gender
+      });
+
+      const response = await axios.post(
         `${VITE_BACKEND_BASE_URL}/api/students/signup`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(formData),
-        }
+        formData,
+        { withCredentials: true }
       );
 
-      const data = await response.json();
+      if (response.status === 201) {
+        console.log("✅ Student signup successful:", {
+          userId: response.data.user?.id,
+          email: response.data.user?.email,
+          name: response.data.user?.name,
+          timestamp: new Date().toISOString()
+        });
+        
+        toast.success("Registration successful! Please verify your email.");
+        setUser(response.data.user || {});
+        setUserType("student");
+        setShowSignup(false);
+        setShowEmailVerification(true);
+        setShouldFetchUser(true);
+        resetForm();
 
-      if (!response.ok) {
-        throw new Error(data.message || data.error || "Registration failed.");
+        // Store token in cookie and localStorage
+        const expiry = new Date(
+          Date.now() + 7 * 24 * 60 * 60 * 1000
+        ).toUTCString();
+        document.cookie = `authToken=${response.data.token}; path=/; expires=${expiry}; SameSite=Strict; Secure`;
+        localStorage.setItem("authToken", response.data.token);
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+        localStorage.setItem("userType", "student");
+        sessionStorage.setItem("verify_email", email);
+        sessionStorage.setItem("verify_user_type", "student");
+
+        console.log("📧 Email verification setup:", {
+          email: email,
+          userType: "student",
+          redirecting: true,
+          sessionData: {
+            verify_email: sessionStorage.getItem("verify_email"),
+            verify_user_type: sessionStorage.getItem("verify_user_type")
+          }
+        });
+
+        navigate("/verify", { replace: true });
+      } else {
+        throw new Error("Unexpected response status: " + response.status);
       }
 
-      Cookies.set("signupEmail", email, {
-        expires: 1,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "Strict",
-      });
-      Cookies.set("userType", "student", {
-        expires: 1,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "Strict",
-      });
+//       toast.success("Registration successful! Please verify your email.");
+//       setUser(data.user);
+//       setUserType("student");
+//       setShowSignup(false);
+//       setShowEmailVerification(true);
+//       setShouldFetchUser(true);
+//       resetForm();
+//       localStorage.setItem("verify_email", data.user.email);
+//       localStorage.setItem("verify_user_type", "student");
 
-      toast.success("Registration successful! Please verify your email.");
-      setUser(data.user);
-      setUserType("student");
-      setShowSignup(false);
-      setShowEmailVerification(true);
-      setShouldFetchUser(true);
-      resetForm();
-      localStorage.setItem("verify_email", data.user.email);
-      localStorage.setItem("verify_user_type", "student");
+//       navigate("/verify");
 
-      navigate("/verify");
     } catch (error) {
-      console.error("Signup error:", error);
-      toast.error(error.message || "Something went wrong.");
+      console.error("❌ Signup error details:", {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        responseData: error.response?.data,
+        email: email,
+        timestamp: new Date().toISOString()
+      });
+      
+      const message =
+        error.response?.data?.message === "Email already exists"
+          ? "Email already registered."
+          : error.response?.data?.message === "Phone number already exists"
+          ? "Phone number already registered."
+          : error.response?.data?.message || "Something went wrong.";
+      
+      console.log("🔄 Displaying error message to user:", message);
+      toast.error(message);
     } finally {
       setLoading(false);
+      console.log("🏁 Signup process completed, loading state reset");
     }
   };
 
   return (
     <div className="relative min-h-screen bg-gray-50 flex flex-col overflow-hidden lg:flex-row">
-      {/* Logo */}
       <div className="px-4 sm:px-6 lg:px-10 z-30">
         <img
           src={assets.logo || "/fallback-logo.png"}
@@ -237,9 +306,7 @@ const StudentSignup = () => {
         />
       </div>
 
-      {/* Main Content */}
       <div className="flex flex-col lg:flex-row items-center justify-center w-full min-h-screen p-4 sm:p-6 lg:p-10">
-        {/* Right Form Section */}
         <div className="w-full max-w-md sm:max-w-lg lg:max-w-xl mx-auto lg:mx-0 lg:mr-8 xl:mr-16">
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 text-center mb-10 sm:mb-8 lg:mb-4">
             Sign Up
@@ -250,7 +317,6 @@ const StudentSignup = () => {
             onSubmit={onSubmitHandler}
             noValidate
           >
-            {/* Name */}
             <div className="mb-4 w-full max-w-sm sm:max-w-md">
               <label htmlFor="name" className="sr-only">
                 Name
@@ -295,7 +361,6 @@ const StudentSignup = () => {
               )}
             </div>
 
-            {/* Email */}
             <div className="mb-4 w-full max-w-sm sm:max-w-md">
               <label htmlFor="email" className="sr-only">
                 Email
@@ -340,7 +405,6 @@ const StudentSignup = () => {
               )}
             </div>
 
-            {/* Contact */}
             <div className="mb-4 w-full max-w-sm sm:max-w-md">
               <label htmlFor="phoneNumber" className="sr-only">
                 Contact
@@ -384,7 +448,6 @@ const StudentSignup = () => {
               )}
             </div>
 
-            {/* Date of Birth */}
             <div className="mb-4 w-full max-w-sm sm:max-w-md">
               <label htmlFor="dateOfBirth" className="sr-only">
                 Date of Birth
@@ -428,7 +491,6 @@ const StudentSignup = () => {
               )}
             </div>
 
-            {/* Gender */}
             <div className="mb-4 w-full max-w-sm sm:max-w-md">
               <fieldset
                 className={`border-b-2 ${
@@ -494,7 +556,6 @@ const StudentSignup = () => {
               )}
             </div>
 
-            {/* Password */}
             <div className="mb-4 w-full max-w-sm sm:max-w-md">
               <label htmlFor="password" className="sr-only">
                 Password
@@ -558,7 +619,6 @@ const StudentSignup = () => {
               )}
             </div>
 
-            {/* Confirm Password */}
             <div className="mb-4 w-full max-w-sm sm:max-w-md">
               <label htmlFor="confirmPassword" className="sr-only">
                 Confirm Password
@@ -625,10 +685,9 @@ const StudentSignup = () => {
               )}
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
-              className="w-36 sm:w-40 px-4 py-2.5 text-sm sm:text-base text-white font-semibold bg-[#1F4C56]  rounded-full mt-4 disabled:bg-[#2D7B67]"
+              className="w-36 sm:w-40 px-4 py-2.5 text-sm sm:text-base text-white font-semibold bg-[#1F4C56] rounded-full mt-4 disabled:bg-[#2D7B67]"
               disabled={loading}
             >
               {loading ? (
@@ -643,7 +702,6 @@ const StudentSignup = () => {
           </form>
         </div>
 
-        {/* Left Illustration Section */}
         <div className="hidden lg:block w-full max-w-md xl:max-w-lg mx-auto lg:mx-0">
           <div className="relative">
             <svg

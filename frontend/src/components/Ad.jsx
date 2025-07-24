@@ -1,4 +1,3 @@
-// src/Ad.jsx
 import { useState } from "react";
 import Card from "./Card";
 import HorizontalCard from "./HorizontalCard";
@@ -9,18 +8,19 @@ import useInstitutes from "../hooks/useInstitutes";
 import LoadingSpinner from "./LoadingSpinner";
 
 const course = [
-  { id: 1, name: "JEE" },
-  { id: 2, name: "NEET" },
-  { id: 3, name: "GATE" },
-  { id: 4, name: "NIFT" },
-  { id: 5, name: "SSC CGL" },
-  { id: 6, name: "UPSC" },
-  { id: 7, name: "NDA" },
-  { id: 8, name: "CLAT" },
-  { id: 9, name: "CAT" },
-  { id: 10, name: "CUET" },
-  { id: 11, name: "CDS" },
-  { id: 12, name: "AFCAT" },
+  { id: 1, name: "Any" },
+  { id: 2, name: "JEE" },
+  { id: 3, name: "NEET" },
+  { id: 4, name: "GATE" },
+  { id: 5, name: "NIFT" },
+  { id: 6, name: "SSC CGL" },
+  { id: 7, name: "UPSC" },
+  { id: 8, name: "NDA" },
+  { id: 9, name: "CLAT" },
+  { id: 10, name: "CAT" },
+  { id: 11, name: "CUET" },
+  { id: 12, name: "CDS" },
+  { id: 13, name: "AFCAT" },
 ];
 
 const Ad = () => {
@@ -39,6 +39,7 @@ const Ad = () => {
         {institutes.slice(0, 2).map((institute) => (
           <HorizontalCard
             key={institute.id}
+            id={institute.id}
             name={institute.basic_info?.name || institute.institute_name}
             address={
               institute.contact_details?.headOffice?.address || "Not Available"
@@ -53,7 +54,7 @@ const Ad = () => {
         ))}
       </div>
 
-      {/*------ BROWSE INSTITUTES -----*/}
+      {/* Browse Institutes */}
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-[#002639] mb-6">
           Browse Institutes
@@ -79,12 +80,24 @@ const Ad = () => {
         </div>
       </div>
 
-      {/*-----------COACHING INFORMATION----------*/}
       <div className="w-full mx-auto px-4 sm:px-6 md:px-8 flex flex-col sm:flex-row gap-6 items-center justify-center mb-10">
-        {institutes.slice(2, 5).map((institute) => (
-          <Card key={institute.id} institute={institute} />
-        ))}
+        {(activePathId === 1
+          ? institutes
+          : institutes.filter((institute) =>
+            institute.courses?.courses?.some(
+              (courseObj) =>
+                courseObj.name.toLowerCase() ===
+                course.find((c) => c.id === activePathId)?.name.toLowerCase()
+            )
+          )
+        )
+          .slice(0, 3)
+          .map((institute) => (
+            <Card key={institute.id} institute={institute} />
+          ))}
+
       </div>
+
     </>
   );
 };

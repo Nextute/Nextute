@@ -13,8 +13,11 @@ import {
   verifyCode,
   login,
   logout,
-  resendVerificationCode,
+  getInstituteById,
   getAllInstitutesData,
+  resendVerificationCode,
+  getAllInstitutesData
+
 } from "../controllers/instituteAuthController.js";
 import instituteAuth from "../middlewares/instituteAuthMiddleware.js";
 import { validateEmailDomain } from "../middlewares/emailValidationMiddleware.js";
@@ -24,6 +27,7 @@ const router = express.Router();
 
 router.get("/profile", instituteAuth, getInstituteProfile);
 router.get("/all-institutes", getAllInstitutesData);
+router.get("/:id", getInstituteById);
 
 router.patch(
   "/upload/image",
@@ -48,12 +52,16 @@ router.patch("/me/:section", instituteAuth, updateProfileSection);
 
 router.post("/signup", validateEmailDomain, signup);
 router.post("/verify", validateEmailDomain, verifyCode);
+
 router.post(
   "/resend-verification",
   validateEmailDomain,
   resendVerificationCode
 );
+
 router.post("/auth/login", login);
 router.post("/logout", instituteAuth, logout);
 
 export default router;
+
+

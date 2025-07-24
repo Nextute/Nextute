@@ -9,8 +9,8 @@ const genderIcons = {
 };
 
 const MainContent = ({ studentData }) => {
-  // Safe fallback in case studentData or studentData.data is undefined
-  const data = studentData?.data || {};
+  // studentData now directly contains the student object from API response
+  const data = studentData || {};
 
   const [isEditing, setIsEditing] = useState({
     address: false,
@@ -83,6 +83,21 @@ const MainContent = ({ studentData }) => {
             </div>
             <p className="text-sm text-[#263238] font-medium px-24 py-2">
               {data.gender || "Not specified"}
+            </p>
+          </div>
+
+          {/* Email */}
+          <div className="bg-[#E6EDE2] border border-black rounded-3xl shadow-sm px-4 py-2 mt-4">
+            <div className="flex items-center px-4 gap-2">
+              <img
+                src={assets.email}
+                alt="Email Icon"
+                className="w-6 h-6"
+              />
+              <p className="text-xl font-semibold text-black">Email</p>
+            </div>
+            <p className="text-sm text-[#263238] font-medium px-24 py-2">
+              {data.email || "Not provided"}
             </p>
           </div>
         </div>

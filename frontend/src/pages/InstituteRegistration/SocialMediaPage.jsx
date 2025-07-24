@@ -276,8 +276,8 @@ const SocialMediaPage = () => {
           setShowEmailVerification(true);
           setShouldFetchUser(true);
 
-          localStorage.setItem("verify_email", data.user?.email);
-          localStorage.setItem("verify_user_type", "institute");
+          sessionStorage.setItem("verify_email", data.user?.email);
+          sessionStorage.setItem("verify_user_type", "institute");
           navigate("/");
         }
       } catch (error) {

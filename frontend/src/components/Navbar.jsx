@@ -13,6 +13,12 @@ const Navbar = () => {
     userType,
     logout,
   } = useContext(AppContext);
+
+  console.log("Header render →", {
+    isAuthenticated,
+    user,
+  });
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -73,7 +79,8 @@ const Navbar = () => {
           <p>Services</p>
         </NavLink>
 
-        {isAuthenticated ? (
+        {isAuthenticated ? (   
+
           <div className="relative">
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}

@@ -25,7 +25,7 @@ const StudyPath = () => {
             <p className="text-base sm:text-lg font-medium text-[#000] truncate">
               {path.name}
             </p>
-          </div>
+          </div> 
         ))}
       </div>
     </section>
