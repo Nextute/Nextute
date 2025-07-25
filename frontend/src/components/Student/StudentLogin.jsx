@@ -6,7 +6,8 @@ import { toast } from "react-hot-toast";
 import { Eye, EyeOff } from "lucide-react";
 import { AppContext } from "../../context/AppContext";
 import { useNavigate } from "react-router-dom";
-import { parsePhoneNumberFromString } from "libphonenumber-js";
+import axios from "axios";
+import PhoneNumberValidator from "../../context/PhoneNumberValidator.jsx";
 
 const sanitizeInput = (input) => input.replace(/[<>]/g, "");
 
@@ -64,6 +65,27 @@ const StudentLogin = () => {
   } = useContext(AppContext);
   const navigate = useNavigate();
 
+  const validateInput = (input) => {
+    if (input.includes("@")) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const isValid = emailRegex.test(input);
+      return {
+        type: "email",
+        isValid,
+        value: input,
+        error: isValid ? "" : "Please enter a valid email address.",
+      };
+    } else {
+      const phoneValidation = PhoneNumberValidator(input);
+      return {
+        type: "phone",
+        isValid: phoneValidation.isValid,
+        value: phoneValidation.e164 || input,
+        error: phoneValidation.isValid ? "" : phoneValidation.error,
+      };
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     const sanitizedValue = sanitizeInput(value);
@@ -94,8 +116,6 @@ const StudentLogin = () => {
     const sanitizedLoginInput = sanitizeInput(loginInput.trim());
     const sanitizedPassword = sanitizeInput(password.trim());
 
-    const isEmail = sanitizedLoginInput.includes("@");
-
     if (!sanitizedLoginInput || !sanitizedPassword) {
       setErrors({
         loginInput: sanitizedLoginInput
@@ -106,6 +126,12 @@ const StudentLogin = () => {
       return toast.error("Please fill in all fields.");
     }
 
+    const validation = validateInput(sanitizedLoginInput);
+    if (!validation.isValid) {
+      setErrors((prev) => ({ ...prev, loginInput: validation.error }));
+      return toast.error(validation.error);
+    }
+
     if (sanitizedPassword.length < 8) {
       setErrors((prev) => ({
         ...prev,
@@ -114,40 +140,51 @@ const StudentLogin = () => {
       return toast.error("Password must be at least 8 characters.");
     }
 
-    const payload = isEmail
-      ? { email: sanitizedLoginInput, password: sanitizedPassword }
-      : { phone: sanitizedLoginInput, password: sanitizedPassword };
+    const payload = {
+      [validation.type === "email" ? "email" : "phone"]: validation.value,
+      password: sanitizedPassword,
+    };
 
     setLoading(true);
     try {
-      const response = await fetch(
+      const response = await axios.post(
         `${VITE_BACKEND_BASE_URL}/api/students/auth/login`,
+        payload,
         {
-          method: "POST",
+          withCredentials: true,
           headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(payload),
         }
       );
 
-      const data = await response.json();
+      if (response.status === 200) {
+        toast.success("Login successful!");
+        setUser(response.data.user);
+        setUserType("student");
+        setShouldFetchUser(true);
+        setShowLogin(false);
+        resetForm();
 
-      if (!response.ok) {
-        throw new Error(
-          data.message || "Login failed. Please check credentials."
-        );
+        // Store token in cookie and localStorage
+        if (rememberMe) {
+          const expiry = new Date(
+            Date.now() + 7 * 24 * 60 * 60 * 1000
+          ).toUTCString();
+          document.cookie = `authToken=${response.data.token}; path=/; expires=${expiry}; SameSite=Strict; Secure`;
+          localStorage.setItem("authToken", response.data.token);
+        }
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+        localStorage.setItem("userType", "student");
+        sessionStorage.removeItem("verify_email");
+        sessionStorage.removeItem("verify_user_type");
+
+        navigate("/");
       }
-
-      toast.success("Login successful!");
-      setUser(data.user);
-      setUserType("student");
-      setShouldFetchUser(true);
-      setShowLogin(false);
-      resetForm();
-      navigate("/");
     } catch (error) {
-      console.error("Login error:", error);
-      toast.error(error.message || "Something went wrong.");
+      const message =
+        error.response?.status === 401
+          ? "Invalid credentials."
+          : error.response?.data?.message || "Login failed. Please try again.";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -155,14 +192,12 @@ const StudentLogin = () => {
 
   return (
     <div className="min-h-screen">
-      {/* Logo Section */}
       <img
         src={assets.logo || "/fallback-logo.png"}
         alt="Company Logo"
         className="w-32 sm:w-40 flex justify-start ml-20"
       />
 
-      {/* Login Form Section */}
       <div className="flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 -mt-4">
         <div className="w-full max-w-md sm:max-w-lg lg:max-w-xl flex flex-col items-center">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
@@ -182,7 +217,6 @@ const StudentLogin = () => {
             Login
           </h1>
 
-          {/* Form Inputs */}
           <form
             className="w-full flex flex-col items-center space-y-6"
             onSubmit={onSubmitHandler}
@@ -285,7 +319,6 @@ const StudentLogin = () => {
               </p>
             )}
 
-            {/* Login Button */}
             <button
               type="submit"
               className="w-full sm:w-auto bg-[#1F4C56] text-white px-8 py-3 rounded-full text-lg sm:text-xl font-semibold hover:bg-[#2D7B67] focus:outline-none focus:ring-2 focus:ring-[#2D7B67] transition duration-300"
@@ -302,7 +335,6 @@ const StudentLogin = () => {
               )}
             </button>
 
-            {/* Remember Me and Forgot Password */}
             <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
               <div className="flex items-center gap-2">
                 <label className="inline-flex items-center cursor-pointer">

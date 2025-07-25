@@ -7,6 +7,7 @@ import {
   findInstituteByEmail,
   findInstituteByPhone,
   verifyInstitute,
+  findInstituteById,
   getAllInstitutes,
 } from "../models/instituteModel.js";
 import { handleError } from "../utils/errorHandler.js";
@@ -36,9 +37,19 @@ export const signup = [
       const { institute_name, email, password, contact } = req.body;
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-      const existing = await findInstituteByEmail(email);
-      if (existing) {
+      const existingEmail = await findInstituteByEmail(email);
+      if (existingEmail) {
         return handleError(res, 400, "Email already exists", "EMAIL_EXISTS");
+      }
+
+      const existingPhone = await findInstituteByPhone(contact);
+      if (existingPhone) {
+        return handleError(
+          res,
+          400,
+          "Phone number already exists",
+          "PHONE_EXISTS"
+        );
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -59,14 +70,8 @@ export const signup = [
 
       res.cookie("authToken", token, {
         httpOnly: true,
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
         sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
-      res.cookie("user", JSON.stringify(institute), {
-        httpOnly: true,
-        secure: true, // Always true in production (HTTPS)
-        sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict", // Cross-origin fix
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
@@ -76,7 +81,7 @@ export const signup = [
           status: true,
           message: "Verification code sent",
           token,
-          user: institute,
+          user: { id: institute.id, institute_name, email },
         });
       } catch (emailErr) {
         console.error("Email error (user still created):", emailErr);
@@ -85,11 +90,11 @@ export const signup = [
           message:
             "Account created! Check your email. If you don’t receive a code, contact support.",
           token,
-          user: institute,
+          user: { id: institute.id, institute_name, email },
         });
       }
     } catch (err) {
-      console.error("Signup error:", err);
+      console.error("Signup error:", err, err.stack);
       return handleError(
         res,
         500,
@@ -130,8 +135,25 @@ export const verifyCode = [
         );
       }
 
-      await verifyInstitute(email);
-      return res.status(200).json({ status: true, message: "Email verified" });
+      const updatedInstitute = await verifyInstitute(email);
+      const token = createSecretToken(updatedInstitute.id, "institute");
+
+      res.cookie("authToken", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      return res.status(200).json({
+        status: true,
+        message: "Email verified",
+        user: {
+          id: updatedInstitute.id,
+          institute_name: updatedInstitute.institute_name,
+          email: updatedInstitute.email,
+        },
+      });
     } catch (err) {
       console.error("Verification error:", err);
       return handleError(
@@ -318,6 +340,7 @@ export const updateProfileSection = [
     if (section === "basic-info") {
       if (!value.institute_name) {
         throw new Error("Institute name is required");
+
       }
     }
 
@@ -472,3 +495,35 @@ export const getAllInstitutesData = async (req, res) => {
     );
   }
 };
+
+
+// Fetch institute by ID
+export const getInstituteById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log("Fetching institute by ID:", id);
+
+    // Validate ID format
+    if (!id) {
+      return handleError(res, 400, "Invalid institute ID", "INVALID_ID");
+    }
+
+    const institute = await findInstituteById(id);
+    if (!institute) {
+      return handleError(
+        res,
+        404,
+        "Institute not found",
+        "INSTITUTE_NOT_FOUND"
+      );
+    }
+
+    // Remove sensitive fields
+    const { password, code, ...safeInstitute } = institute;
+    return res.status(200).json({ status: true, data: safeInstitute });
+  } catch (err) {
+    console.error("Get institute by ID error:", err);
+    return handleError(res, 500, "Internal server error", "INSTITUTE_ERROR");
+  }
+};
+

@@ -1,10 +1,9 @@
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Pagination, Navigation, Autoplay } from 'swiper/modules';
-import 'swiper/css';
-import 'swiper/css/pagination';
-import 'swiper/css/navigation';
-import '../index.css';
-
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Pagination, Navigation, Autoplay } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/pagination";
+import "swiper/css/navigation";
+import "../index.css";
 import TestimonialCard from "./TestimonialCard";
 
 const Testimonial = () => {
@@ -13,7 +12,8 @@ const Testimonial = () => {
     {
       id: "t1",
       text: "The coaching at Excel Academy transformed my approach to learning. The teachers were incredibly supportive, and the study materials were top-notch. Thanks to their guidance, I scored 95% in my board exams and secured a seat in my dream engineering college!",
-      quote: "Their personalized mentoring and rigorous mock tests made all the difference.",
+      quote:
+        "Their personalized mentoring and rigorous mock tests made all the difference.",
       author: "Priya Sharma, JEE Aspirant",
       rating: 5,
     },
@@ -77,7 +77,6 @@ const Testimonial = () => {
 
   return (
     <div className="px-0 md:px-8 py-16 pb-10 md:pb-32 my-20 text-center relative overflow-visible">
-
       <h1 className="text-4xl sm:text-5xl font-bold text-[#002639] mb-2">
         “Voices of Success”
       </h1>
@@ -105,15 +104,16 @@ const Testimonial = () => {
         }}
         className="max-w-screen-xl mx-auto relative pb-5"
       >
-        <SwiperSlide><TestimonialCard /></SwiperSlide>
-        <SwiperSlide><TestimonialCard /></SwiperSlide>
-        <SwiperSlide><TestimonialCard /></SwiperSlide>
-        <SwiperSlide><TestimonialCard /></SwiperSlide>
-        <SwiperSlide><TestimonialCard /></SwiperSlide>
-        <SwiperSlide><TestimonialCard /></SwiperSlide>
-        <SwiperSlide><TestimonialCard /></SwiperSlide>
-        <SwiperSlide><TestimonialCard /></SwiperSlide>
-        <SwiperSlide><TestimonialCard /></SwiperSlide>
+        {testimonials.map((testimonial) => (
+          <SwiperSlide key={testimonial.id}>
+            <TestimonialCard
+              text={testimonial.text}
+              quote={testimonial.quote}
+              author={testimonial.author}
+              rating={testimonial.rating}
+            />
+          </SwiperSlide>
+        ))}
       </Swiper>
     </div>
   );

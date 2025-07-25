@@ -1,12 +1,12 @@
 import logo from "./logo.svg";
 import filter from "./filter.svg";
 import Indore from "./Indore.png";
-import Bhuvneshwar from "./Bhuvneshwar.png";
+import Bhubaneswar from "./Bhubaneswar.png";
 import Patna from "./Patna.png";
 import Delhi from "./Delhi.png";
 import Mumbai from "./Mumbai.png";
 import Hyderabad from "./Hyderabad.png";
-import more from "./more.png";
+import More from "./More.png";
 import coaching from "./coaching.png";
 import test1 from "./testimonial1.jpg"
 import google from "./google.svg";
@@ -107,10 +107,10 @@ export const assets = {
 
 export const cities = [
   { id: 1, src: Indore, alt: "Indore City Image", name: "Indore" },
-  { id: 2, src: Bhuvneshwar, alt: "Bhuvneshwar City Image", name: "Bhuvneshwar" },
+  { id: 2, src: Bhubaneswar, alt: "Bhubaneswar City Image", name: "Bhubaneswar" },
   { id: 3, src: Patna, alt: "Patna City Image", name: "Patna" },
   { id: 4, src: Delhi, alt: "Delhi City Image", name: "Delhi" },
   { id: 5, src: Mumbai, alt: "Mumbai City Image", name: "Mumbai" },
   { id: 6, src: Hyderabad, alt: "Hyderabad City Image", name: "Hyderabad" },
-  { id: 7, src: more, alt: "More Cities Image"  },
+  { id: 7, src: More, alt: "More Cities Image", name: "More" },
 ];

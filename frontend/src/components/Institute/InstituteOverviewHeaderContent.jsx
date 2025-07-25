@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   FaMapMarkerAlt,
   FaPhone,
@@ -9,40 +9,68 @@ import {
   FaCheckCircle,
 } from "react-icons/fa";
 import { BsChatTextFill } from "react-icons/bs";
+import axios from "axios";
 
-const InstituteOverviewHeaderContent = () => {
-  const [data, setData] = useState({
-    name: "Alpha classes",
-    verified: true,
-    rating: 5,
-    address: {
-      line1: "12/7 Silverleaf Apartments, Sector 9, Indrapuram",
-      city: "New Delhi",
-      pincode: "110099",
-    },
-    phone: "+91 91234 56789",
-    whatsapp: true,
-    enquiry: true,
-    socialLinks: {
-      instagram: "#",
-      linkedin: "#",
-    },
-    courses: ["JEE", "XII Boards", "X Boards"],
-  });
+const InstituteOverviewHeaderContent = ({ id }) => {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState("");
 
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchInstituteData = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/institutes/${id}`);
+        if (res.data?.status) {
+          console.log("Insitute data", res.data.data);
+          setData(res.data.data);
+        } else {
+          setError("Invalid institute data.");
+        }
+      } catch (err) {
+        setError("Failed to load institute details.");
+      }
+    };
+
+    fetchInstituteData();
+  }, [id]);
+
+  if (!id) {
+    return (
+      <div className="text-red-500 text-center p-4">
+        Error: Institute ID is missing.
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-red-500 text-center p-4">
+        {error}
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="text-center text-gray-700 p-4">Loading header...</div>
+    );
+  }
 
   return (
     <div className="bg-[#E6EDE2] rounded-2xl border border-black p-6 flex flex-col sm:flex-row justify-between items-center sm:items-start gap-5 max-w-screen mx-2 sm:mx-8">
       <div>
         <div className="flex items-center gap-2">
-          <h1 className="text-4xl font-semibold">{data.name}</h1>
-          {data.verified && (
+          <h1 className="text-4xl font-semibold">
+            {data.basic_info?.institute_name || data.institute_name || "Institute Name"}
+          </h1>
+          {data.is_verified && (
             <FaCheckCircle className="text-green-800 text-2xl relative top-[2px]" />
           )}
         </div>
 
         <div className="flex items-center mt-2 text-yellow-500">
-          {[...Array(data.rating)].map((_, i) => (
+          {[...Array(5)].map((_, i) => (
             <FaStar key={i} />
           ))}
         </div>
@@ -50,8 +78,8 @@ const InstituteOverviewHeaderContent = () => {
         <div className="flex items-center mt-2 text-sm text-gray-700">
           <FaMapMarkerAlt className="mr-2 text-2xl text-[#2D7B67]" />
           <span>
-            {data.address.line1},<br /> {data.address.city} -{" "}
-            {data.address.pincode}
+            {data.contact_details?.headOffice?.address ||
+              "Address not available"}
           </span>
         </div>
 
@@ -59,36 +87,33 @@ const InstituteOverviewHeaderContent = () => {
           <div className="flex flex-col sm:flex-row gap-2">
             <button className="flex items-center gap-1 bg-white border border-gray-600 rounded-full px-3 py-1 text-sm">
               <FaPhone className="text-[#2D7B67]" />
-              {data.phone}
+              {data.contact || "Phone N/A"}
             </button>
 
-            {data.whatsapp && (
-              <button className="flex items-center gap-1 bg-[#E6EDE2] border border-gray-600 rounded-full px-3 py-1 text-sm">
-                <FaWhatsapp className="text-[#2D7B67]" />
-                Whatsapp
-              </button>
-            )}
+            {/* Assuming support is present, adjust these booleans if backend adds flags */}
+            <button className="flex items-center gap-1 bg-[#E6EDE2] border border-gray-600 rounded-full px-3 py-1 text-sm">
+              <FaWhatsapp className="text-[#2D7B67]" />
+              Whatsapp
+            </button>
 
-            {data.enquiry && (
-              <button className="flex items-center gap-1 bg-[#E6EDE2] border border-gray-600 rounded-full px-3 py-1 text-sm">
-                <BsChatTextFill className=" text-green-900 rounded-full" />
-                Enquire
-              </button>
-            )}
+            <button className="flex items-center gap-1 bg-[#E6EDE2] border border-gray-600 rounded-full px-3 py-1 text-sm">
+              <BsChatTextFill className=" text-green-900 rounded-full" />
+              Enquire
+            </button>
           </div>
 
           <div className="flex flex-row gap-4">
-            {data.socialLinks.instagram && (
+            {data.social_media?.instagram && (
               <a
-                href={data.socialLinks.instagram}
+                href={data.social_media.instagram}
                 className="text-pink-500 text-3xl"
               >
                 <FaInstagram />
               </a>
             )}
-            {data.socialLinks.linkedin && (
+            {data.social_media?.linkedin && (
               <a
-                href={data.socialLinks.linkedin}
+                href={data.social_media.linkedin}
                 className="text-blue-600 text-3xl"
               >
                 <FaLinkedin />
@@ -98,13 +123,13 @@ const InstituteOverviewHeaderContent = () => {
         </div>
       </div>
 
-      <div className="flex gap-2">
-        {data.courses.map((course) => (
+      <div className="flex gap-2 flex-wrap">
+        {data.courses?.courses?.map((course, index) => (
           <button
-            key={course}
+            key={index}
             className="border border-[#2D7B67] rounded-lg px-4 py-1 text-sm"
           >
-            {course}
+            {course.name}
           </button>
         ))}
       </div>

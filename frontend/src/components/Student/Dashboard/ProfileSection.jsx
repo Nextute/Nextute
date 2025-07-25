@@ -3,12 +3,12 @@ import { assets } from "../../../assets/assets";
 import Loader from "./Loader";
 
 const ProfileSection = ({ studentData }) => {
-  // Safely access data or use empty object to avoid errors
-  const data = studentData?.data || {};
+  // studentData now directly contains the student object from API response
+  const data = studentData || {};
 
   const [profile, setProfile] = useState({
     name: data.name || "Student Name",
-    phoneNumber: data.phoneNumber || "",
+    phoneNumber: data.phone_number || "",
     address: data.address || "",
     guardianName: data.guardianName || "",
     guardianPhoneNumber: data.guardianPhoneNumber || "",
@@ -19,7 +19,7 @@ const ProfileSection = ({ studentData }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!studentData || !studentData.data) {
+    if (!studentData) {
       return; // Wait until data is available
     }
 
@@ -27,14 +27,14 @@ const ProfileSection = ({ studentData }) => {
       const fields = [
         data.name,
         data.gender,
-        data.dob,
-        data.studentId,
-        data.phoneNumber,
-        data.emailAddress,
+        data.date_of_birth,
+        data.student_id,
+        data.phone_number,
+        data.email,
         data.address,
-        data.guardianName,
-        data.guardianPhoneNumber,
-        data.profileImage,
+        data.guardianName, // This field doesn't exist in API, keeping for now
+        data.guardianPhoneNumber, // This field doesn't exist in API, keeping for now
+        data.profileImage, // This field doesn't exist in API, keeping for now
       ];
       const filledFields = fields.filter(
         (field) => field && field !== ""
@@ -48,7 +48,7 @@ const ProfileSection = ({ studentData }) => {
       completion: calculateCompletion(),
       picture: data.profileImage || assets.upload_area,
       name: data.name || "Student Name",
-      phoneNumber: data.phoneNumber || "",
+      phoneNumber: data.phone_number || "",
       address: data.address || "",
       guardianName: data.guardianName || "",
       guardianPhoneNumber: data.guardianPhoneNumber || "",

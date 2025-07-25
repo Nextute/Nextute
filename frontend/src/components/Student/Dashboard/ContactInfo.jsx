@@ -7,10 +7,11 @@ const ContactInfo = ({ studentData }) => {
     guardianPhone: false,
   });
   const [phoneNumber, setPhoneNumber] = useState(
-    studentData?.data?.phone_number || ""
+    studentData?.phone_number || ""
   );
   const [guardianPhone, setGuardianPhone] = useState(
-    studentData?.data?.guardianPhone || ""
+    studentData?.guardianPhone || ""
+    
   );
   const phoneInputRef = useRef(null);
   const guardianPhoneInputRef = useRef(null);
@@ -47,16 +48,16 @@ const ContactInfo = ({ studentData }) => {
       ref: phoneInputRef,
       fieldKey: "phone_number",
       editable: true,
-      placeholder: studentData?.data?.phone_number || "Not provided",
+      placeholder: studentData?.phone_number || "Not provided",
     },
     {
       icon: assets.contact_email,
       label: "Email address",
-      value: studentData?.data?.email || "",
+      value: studentData?.email || "",
       onChange: () => {}, // No-op since email is not editable
       fieldKey: "email",
       editable: false,
-      placeholder: studentData?.data?.email || "Not provided",
+      placeholder: studentData?.email || "Not provided",
     },
     {
       icon: assets.phone,

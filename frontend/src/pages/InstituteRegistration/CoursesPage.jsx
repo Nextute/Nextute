@@ -13,9 +13,10 @@ import axios from "axios";
 import Cookies from "js-cookie";
 import { AppContext } from "../../context/AppContext";
 
+axios.defaults.withCredentials = true;
+
 const defaultCourse = { details: "", category: "", feeRange: "", medium: "" };
 const LOCAL_STORAGE_KEY = "instituteCoursesForm";
-const PROGRESS_KEY = "instituteProgress";
 
 const CoursesPage = () => {
   const [courses, setCourses] = useState([{ ...defaultCourse }]);
@@ -26,44 +27,103 @@ const CoursesPage = () => {
   const { VITE_BACKEND_BASE_URL } = useContext(AppContext);
   const navigate = useNavigate();
 
-  // Load data from localStorage on mount
+  // Fetch saved data from backend or localStorage on mount
   useEffect(() => {
-    console.log("Component mounted, checking localStorage...");
-    const savedCourses = localStorage.getItem(LOCAL_STORAGE_KEY);
-    const progress = localStorage.getItem(PROGRESS_KEY);
-
-    if (savedCourses) {
+    const fetchCoursesData = async () => {
+      console.log("Fetching courses data from backend...");
       try {
-        const parsed = JSON.parse(savedCourses);
-        console.log("Retrieved courses from localStorage:", parsed);
-        setCourses(parsed.length > 0 ? parsed : [{ ...defaultCourse }]);
-        if (progress === "faculties") {
-          console.log(
-            "User navigated back from faculties, disabling edit mode"
-          );
-          setIsEditing(false);
-        }
-      } catch (e) {
-        console.error("Failed to parse saved courses from localStorage:", e);
-        setCourses([{ ...defaultCourse }]);
-      }
-    } else {
-      console.log("No courses found in localStorage");
-    }
-  }, []);
+        const response = await axios.get(
+          `${VITE_BACKEND_BASE_URL}/api/institutes/profile`,
+          {
+            headers: {
+              Authorization: `Bearer ${Cookies.get("authToken")}`,
+            },
+          }
+        );
+        console.log("Backend response :", response.data);
+        console.log("Backend courses data:", response.data.data?.courses);
+        
 
-  // Save courses to localStorage whenever they change
+        if (response.status === 200 && response.data.data?.courses) {
+          try {
+            const parsed = JSON.parse(response.data.data.courses);
+            console.log("Parsed backend courses data:", parsed);
+
+            const courseArray = Array.isArray(parsed)
+              ? parsed
+              : Array.isArray(parsed.courses)
+              ? parsed.courses
+              : [];
+
+            setCourses(
+              courseArray.length > 0 ? courseArray : [{ ...defaultCourse }]
+            );
+            setIsEditing(false);
+          } catch (parseError) {
+            console.error("Failed to parse backend courses data:", parseError);
+            setErrors({ fetch: "Invalid courses data format from backend" });
+          }
+        } else {
+          console.log("No courses data in backend, checking localStorage...");
+          const savedCourses = localStorage.getItem(LOCAL_STORAGE_KEY);
+          if (savedCourses) {
+            try {
+              const parsed = JSON.parse(savedCourses);
+              console.log("Parsed localStorage data:", parsed);
+              setCourses(parsed.length > 0 ? parsed : [{ ...defaultCourse }]);
+              setIsEditing(true);
+            } catch (e) {
+              console.error("Invalid localStorage data:", e);
+              setCourses([{ ...defaultCourse }]);
+              setIsEditing(true);
+            }
+          } else {
+            console.log("No localStorage data, using default course data");
+            setCourses([{ ...defaultCourse }]);
+            setIsEditing(true);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch courses data from backend:", err);
+        setErrors({
+          fetch: err.response?.data?.message || "Failed to fetch courses data",
+        });
+        const savedCourses = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (savedCourses) {
+          try {
+            const parsed = JSON.parse(savedCourses);
+
+            setCourses(parsed.length > 0 ? parsed : [{ ...defaultCourse }]);
+            setIsEditing(true);
+          } catch (e) {
+            console.error("Invalid localStorage data:", e);
+            setCourses([{ ...defaultCourse }]);
+            setIsEditing(true);
+          }
+        } else {
+          console.log("No localStorage data, using default course data");
+          setCourses([{ ...defaultCourse }]);
+          setIsEditing(true);
+        }
+      }
+    };
+
+    fetchCoursesData();
+  }, [VITE_BACKEND_BASE_URL]);
+
+  // Save courses to localStorage only when editing
   useEffect(() => {
-    console.log("Saving courses to localStorage:", courses);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(courses));
-  }, [courses]);
+    if (isEditing) {
+      console.log("Saving courses to localStorage:", courses);
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(courses));
+    }
+  }, [courses, isEditing]);
 
   const toggleExpand = useCallback((index) => {
     setExpandedIndex((prev) => (prev === index ? null : index));
   }, []);
 
   const validateForm = useCallback(() => {
-    console.log("Courses before validation:", courses);
     const newErrors = {};
     let hasValidCourse = false;
 
@@ -106,7 +166,7 @@ const CoursesPage = () => {
     console.log(`Input changed: course[${index}].${field} = ${value}`);
     setCourses((prev) => {
       const updated = [...prev];
-      updated[index][field] = value;
+      updated[index] = { ...updated[index], [field]: value };
       return updated;
     });
     setErrors((prev) => ({
@@ -117,14 +177,15 @@ const CoursesPage = () => {
 
   const handleAddCourse = useCallback(() => {
     if (!isEditing) return;
-    console.log("Adding new course");
+
     setCourses((prev) => [...prev, { ...defaultCourse }]);
-  }, [isEditing]);
+    setExpandedIndex(courses.length);
+  }, [isEditing, courses.length]);
 
   const handleRemoveCourse = useCallback(
     (index) => {
       if (!isEditing) return;
-      console.log(`Removing course at index ${index}`);
+
       const updated = [...courses];
       updated.splice(index, 1);
       setCourses(updated);
@@ -134,28 +195,38 @@ const CoursesPage = () => {
   );
 
   const handleEditClick = useCallback(() => {
-    console.log("Edit button clicked, enabling form");
     setIsEditing(true);
-    setIsSubmitting(false); // Ensure no stale submitting state
-    setErrors((prev) => ({ ...prev, submit: undefined })); // Clear submit error
+    setErrors((prev) => ({ ...prev, submit: undefined, fetch: undefined }));
   }, []);
 
   const handleSubmit = useCallback(
     async (e) => {
       e.preventDefault();
-      console.log("Attempting form submission...", { isSubmitting, isEditing });
+
       if (!validateForm() || isSubmitting) {
         console.log("Form validation failed or already submitting");
         return;
       }
 
       setIsSubmitting(true);
-      console.log("Submission started, isSubmitting set to true");
+
       try {
         const validCourses = courses.filter(
           (c) => c.details.trim() && c.category && c.feeRange && c.medium
         );
-        console.log("Submitting courses to API:", validCourses);
+
+        // Ensure validCourses is an array
+        if (!Array.isArray(validCourses)) {
+          throw new Error("Courses data is not an array");
+        }
+
+        // Prevent submission if no valid courses
+        if (validCourses.length === 0) {
+          setErrors({ form: "At least one valid course is required" });
+          setIsSubmitting(false);
+          return;
+        }
+
         const token = Cookies.get("authToken");
         const response = await axios.patch(
           `${VITE_BACKEND_BASE_URL}/api/institutes/me/courses`,
@@ -168,25 +239,20 @@ const CoursesPage = () => {
           }
         );
 
+        console.log("Backend submission response:", response.data);
+
         if (response.status === 200) {
-          console.log(
-            "Form submitted successfully, navigating to faculties page"
-          );
-          localStorage.setItem(PROGRESS_KEY, "faculties");
+          localStorage.removeItem(LOCAL_STORAGE_KEY);
+          setIsEditing(false);
           navigate("/institute/faculties");
-        } else {
-          throw new Error("Server Error");
         }
       } catch (error) {
         console.error("Form submission failed:", error);
         setErrors({
-          submit:
-            error.response?.data?.message ||
-            "Something went wrong. Please try again.",
+          submit: error.response?.data?.message || "Failed to submit form",
         });
       } finally {
         setIsSubmitting(false);
-        console.log("Submission ended, isSubmitting set to false");
       }
     },
     [courses, isSubmitting, navigate, validateForm, VITE_BACKEND_BASE_URL]
@@ -203,7 +269,9 @@ const CoursesPage = () => {
               name={`${field}-${index}`}
               checked={courses[index][field] === option}
               onChange={() => handleInputChange(index, field, option)}
-              className="accent-[#2D7A66] size-4"
+              className={`accent-[#2D7A66] size-4 ${
+                isEditing ? "" : "opacity-50"
+              }`}
               disabled={!isEditing}
             />
             <span className="text-lg capitalize">{option}</span>
@@ -225,7 +293,9 @@ const CoursesPage = () => {
           type="button"
           onClick={handleAddCourse}
           className={`text-sm sm:text-base absolute top-[2.8rem] right-2 sm:right-5 text-white rounded-full flex justify-center items-center px-6 py-3 ${
-            isEditing ? "bg-[#204B54]" : "bg-gray-400 cursor-not-allowed"
+            isEditing
+              ? "bg-[#204B54] hover:bg-[#2D7B67]"
+              : "bg-gray-400 cursor-not-allowed"
           }`}
           disabled={!isEditing}
         >
@@ -234,6 +304,10 @@ const CoursesPage = () => {
       </div>
 
       <RegistrationNavigation />
+
+      {errors.fetch && (
+        <p className="text-red-500 text-sm text-center mb-4">{errors.fetch}</p>
+      )}
 
       <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
         {courses.map((course, index) => (
@@ -271,7 +345,9 @@ const CoursesPage = () => {
                     Course Details
                   </label>
                   <textarea
-                    className="w-full text-base p-2 border rounded-md outline-none focus:ring-2 focus:ring-[#2D7A66] resize-none"
+                    className={`w-full text-base p-2 border rounded-md outline-none focus:ring-2 focus:ring-[#2D7A66] resize-none ${
+                      isEditing ? "bg-gray-200" : "bg-gray-50"
+                    }`}
                     rows={4}
                     placeholder="What you offer in this course?"
                     value={course.details}
