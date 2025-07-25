@@ -16,7 +16,7 @@ const InstituteOverviewContactInfo = ({ id }) => {
 
     const fetchContactInfo = async () => {
       try {
-        const res = await axios.get(`http://localhost:8080/api/institutes/${id}`);
+        const res = await axios.get(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/institutes/${id}`);
         if (res.data?.status) {
           const data = res.data.data;
           setContact({

@@ -11,16 +11,12 @@ const course = [
   { id: 1, name: "Any" },
   { id: 2, name: "JEE" },
   { id: 3, name: "NEET" },
-  { id: 4, name: "GATE" },
-  { id: 5, name: "NIFT" },
-  { id: 6, name: "SSC CGL" },
-  { id: 7, name: "UPSC" },
-  { id: 8, name: "NDA" },
-  { id: 9, name: "CLAT" },
-  { id: 10, name: "CAT" },
-  { id: 11, name: "CUET" },
-  { id: 12, name: "CDS" },
-  { id: 13, name: "AFCAT" },
+  { id: 4, name: "SSC" },
+  { id: 5, name: "UPSC" },
+  { id: 6, name: "CUET" },
+  { id: 7, name: "GATE" },
+  { id: 8, name: "NIFT" },
+  { id: 9, name: "CAT" },
 ];
 
 const Ad = () => {
@@ -86,7 +82,7 @@ const Ad = () => {
           : institutes.filter((institute) =>
             institute.courses?.courses?.some(
               (courseObj) =>
-                courseObj.name.toLowerCase() ===
+                courseObj.details.toLowerCase() ===
                 course.find((c) => c.id === activePathId)?.name.toLowerCase()
             )
           )
