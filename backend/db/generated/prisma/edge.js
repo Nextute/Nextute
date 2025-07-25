@@ -175,7 +175,6 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "D:\\Delete Later\\Nextute-evasabeeh\\Nextute-evasabeeh\\backend\\db\\generated\\prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -189,12 +188,10 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "D:\\Delete Later\\Nextute-evasabeeh\\Nextute-evasabeeh\\backend\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
-    "rootEnvPath": null,
-    "schemaEnvPath": "../../../.env"
+    "rootEnvPath": null
   },
   "relativePath": "../../../prisma",
   "clientVersion": "6.11.1",
