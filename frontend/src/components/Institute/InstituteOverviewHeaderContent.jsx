@@ -22,6 +22,7 @@ const InstituteOverviewHeaderContent = ({ id }) => {
       try {
         const res = await axios.get(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/institutes/${id}`);
         if (res.data?.status) {
+          console.log("Insitute data", res.data.data);
           setData(res.data.data);
         } else {
           setError("Invalid institute data.");
@@ -61,7 +62,7 @@ const InstituteOverviewHeaderContent = ({ id }) => {
       <div>
         <div className="flex items-center gap-2">
           <h1 className="text-4xl font-semibold">
-            {data.basic_info?.name || "Institute Name"}
+            {data.basic_info?.institute_name || data.institute_name || "Institute Name"}
           </h1>
           {data.is_verified && (
             <FaCheckCircle className="text-green-800 text-2xl relative top-[2px]" />

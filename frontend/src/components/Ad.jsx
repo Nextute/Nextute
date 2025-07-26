@@ -30,26 +30,6 @@ const Ad = () => {
 
   return (
     <>
-      {/* Advertisement Section */}
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8 flex flex-col md:flex-row gap-4 sm:gap-6 items-center justify-center">
-        {institutes.slice(0, 2).map((institute) => (
-          <HorizontalCard
-            key={institute.id}
-            id={institute.id}
-            name={institute.basic_info?.name || institute.institute_name}
-            address={
-              institute.contact_details?.headOffice?.address || "Not Available"
-            }
-            contact={institute.contact}
-            image={assets.coaching || institute.basic_info?.logoURL}
-            tags={
-              ["JEE", "Boards"] ||
-              institute.courses?.courses?.map((c) => c.name)
-            }
-          />
-        ))}
-      </div>
-
       {/* Browse Institutes */}
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-[#002639] mb-6">
@@ -80,20 +60,18 @@ const Ad = () => {
         {(activePathId === 1
           ? institutes
           : institutes.filter((institute) =>
-            institute.courses?.courses?.some(
-              (courseObj) =>
-                courseObj.details.toLowerCase() ===
-                course.find((c) => c.id === activePathId)?.name.toLowerCase()
+              institute.courses?.courses?.some(
+                (courseObj) =>
+                  courseObj.details.toLowerCase() ===
+                  course.find((c) => c.id === activePathId)?.name.toLowerCase()
+              )
             )
-          )
         )
           .slice(0, 3)
           .map((institute) => (
             <Card key={institute.id} institute={institute} />
           ))}
-
       </div>
-
     </>
   );
 };
