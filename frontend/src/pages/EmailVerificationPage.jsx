@@ -63,7 +63,7 @@ const EmailVerificationPage = () => {
     setCode(newCode);
     if (value && index < 5) inputRefs.current[index + 1].focus();
     if (newCode.every((digit) => digit !== "")) {
-      handleSubmit();
+      handleSubmit(null, newCode.join(""));
     }
   };
 
@@ -83,13 +83,14 @@ const EmailVerificationPage = () => {
     setCode(newCode);
     inputRefs.current[Math.min(pastedData.length, 5)].focus();
     if (pastedData.length === 6) {
-      handleSubmit();
+      handleSubmit(null, newCode.join(""));
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, manualCode) => {
     if (e) e.preventDefault();
-    const verificationCode = code.join("");
+    const verificationCode = manualCode || code.join("");
+    
     if (verificationCode.length !== 6 || !/^\d{6}$/.test(verificationCode)) {
       setError("Please enter a valid 6-digit code.");
       toast.error("Invalid verification code.");
