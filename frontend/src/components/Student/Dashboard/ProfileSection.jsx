@@ -60,7 +60,7 @@ const ProfileSection = ({ studentData }) => {
   }, [studentData]);
 
   // Optional: show loading state if data not ready yet
-  if (!studentData || !studentData.data) {
+  if (!studentData) {
     return <div>Loading profile...</div>;
   }
 
