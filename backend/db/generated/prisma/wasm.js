@@ -145,7 +145,6 @@ exports.Prisma.InstituteScalarFieldEnum = {
 
 exports.Prisma.StudentScalarFieldEnum = {
   id: 'id',
-  student_id: 'student_id',
   name: 'name',
   email: 'email',
   password: 'password',
@@ -156,9 +155,10 @@ exports.Prisma.StudentScalarFieldEnum = {
   date_of_birth: 'date_of_birth',
   is_verified: 'is_verified',
   code: 'code',
-  code_expires_at: 'code_expires_at',
   created_at: 'created_at',
-  updated_at: 'updated_at'
+  updated_at: 'updated_at',
+  code_expires_at: 'code_expires_at',
+  student_id: 'student_id'
 };
 
 exports.Prisma.SortOrder = {

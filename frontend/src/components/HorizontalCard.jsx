@@ -1,74 +1,187 @@
+import React from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { FaPhoneAlt, FaWhatsapp, FaMapMarkerAlt } from "react-icons/fa";
 import { BsChatTextFill } from "react-icons/bs";
 import { assets } from "../assets/assets";
 
-const HorizontalCard = ({ name, address, tags, contact, image }) => {
+// Default fallback image (replace with your assets import or a placeholder URL)
+const DEFAULT_IMAGE =
+  assets.coaching || "https://via.placeholder.com/400x300?text=Institute+Image";
+
+const HorizontalCard = ({
+  id,
+  name,
+  address,
+  tags = [],
+  contact,
+  image,
+  rating = 4.5,
+}) => {
   const navigate = useNavigate();
 
+  // Data normalization to handle inconsistencies
+  const normalizedName = name?.trim() || "Unnamed Institute";
+  const normalizedAddress = address?.trim() || "Address Not Available";
+  const normalizedContact = contact?.trim() || "+91 91234 56789";
+  const normalizedImage = image?.trim() || DEFAULT_IMAGE;
+  const normalizedTags = Array.isArray(tags)
+    ? tags.filter((tag) => typeof tag === "string" && tag.trim()).slice(0, 4)
+    : [];
+  const normalizedRating =
+    typeof rating === "number" && rating >= 0 && rating <= 5 ? rating : 4.5;
+
+  // Animation variants
+  const cardVariants = {
+    hidden: { opacity: 0, y: 40 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5, ease: "easeOut" },
+    },
+    hover: {
+      scale: 1.02,
+      boxShadow: "0 15px 30px rgba(0, 0, 0, 0.1)",
+      transition: { duration: 0.3 },
+    },
+  };
+
+  const imageVariants = {
+    hover: { scale: 1.05, transition: { duration: 0.4 } },
+  };
+
+  const buttonVariants = {
+    hover: {
+      scale: 1.05,
+      backgroundColor: "#10B981",
+      transition: { duration: 0.2 },
+    },
+    tap: { scale: 0.95 },
+  };
+
   return (
-    <div
-      className="flex flex-col md:flex-row items-start bg-white border border-gray-300 rounded-2xl shadow-sm max-w-2xl sm:max-w-3xl w-full mx-auto my-2 sm:my-4 hover:scale-105 hover:shadow-lg transition-all duration-300 cursor-pointer"
-      onClick={() => navigate("/institute/overview")}
+    <motion.div
+      variants={cardVariants}
+      initial="hidden"
+      animate="visible"
+      whileHover="hover"
+      className="relative flex flex-col md:flex-row items-start bg-gradient-to-br from-white to-emerald-50/30 border border-emerald-200/40 rounded-3xl shadow-md max-w-3xl w-full mx-auto my-4 hover:shadow-xl transition-all duration-300 cursor-pointer"
+      onClick={() => navigate(`/institute/overview/${id || "unknown"}`)}
     >
-      <div className="w-full md:w-5/12 aspect-[4/3] p-2 sm:p-3">
-        <img
-          src={image || assets.coaching}
-          alt="Institute"
+      {/* Image Section */}
+      <div className="w-full md:w-5/12 h-56 md:h-[320px] p-3">
+        <motion.img
+          src={normalizedImage}
+          alt={`${normalizedName} Image`}
           className="w-full h-full object-cover rounded-2xl"
           loading="lazy"
+          variants={imageVariants}
+          onError={(e) => {
+            e.target.src = DEFAULT_IMAGE;
+          }} // Fallback on image load error
         />
       </div>
 
-      <div className="p-3 sm:p-4 md:p-5 flex-1 relative">
-        <div className="flex flex-row justify-between items-center mb-2 sm:mb-3">
-          <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900">
-            {name}
+      {/* Content Section */}
+      <div className="flex-1 p-4 sm:p-5 md:p-6 flex flex-col">
+        {/* Header */}
+        <div className="flex flex-row justify-between items-center mb-3">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-gray-900 group-hover:text-emerald-600 line-clamp-1">
+            {normalizedName}
           </h2>
-          <div className="text-[#2D7B67] text-sm sm:text-2xl">
-            {"★".repeat(5)}
+          <div className="flex items-center gap-1 text-emerald-600">
+            {Array(5)
+              .fill()
+              .map((_, i) => (
+                <span
+                  key={i}
+                  className={
+                    i < Math.floor(normalizedRating)
+                      ? "text-yellow-400"
+                      : "text-gray-300"
+                  }
+                >
+                  ★
+                </span>
+              ))}
+            <span className="text-xs sm:text-sm text-gray-600 ml-1">
+              {normalizedRating.toFixed(1)}
+            </span>
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 sm:gap-3 mb-3 sm:mb-4">
+        {/* Details */}
+        <div className="flex flex-col gap-3 mb-8">
           <div className="flex items-start text-gray-700">
-            <FaMapMarkerAlt className="mt-0.5 mr-1.5 sm:mr-2 w-4 h-4 sm:w-5 sm:h-5 text-[#2D7B67] shrink-0" />
-            <p className="text-xs sm:text-sm leading-tight">
-              {address || "Not Available"}
+            <FaMapMarkerAlt className="mt-1 mr-2 w-5 h-5 text-emerald-600 shrink-0" />
+            <p className="text-sm sm:text-base text-gray-600 line-clamp-2 leading-tight">
+              {normalizedAddress}
             </p>
           </div>
-
-          <div className="flex flex-wrap gap-1 sm:gap-2">
-            {(tags || []).map((tag, index) => (
-              <span
-                key={index}
-                className="bg-[#E6EDE2] text-[0.65rem] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-lg hover:bg-[#d7e0d5] transition"
-              >
-                {tag}
+          <div className="flex flex-wrap gap-2 mt-5">
+            {normalizedTags.length > 0 ? (
+              normalizedTags.map((tag, index) => (
+                <span
+                  key={index}
+                  className="bg-emerald-100 text-emerald-800 text-xs sm:text-sm px-3 py-1 rounded-lg hover:bg-emerald-200 transition"
+                >
+                  {tag.length > 20 ? `${tag.slice(0, 20)}...` : tag}
+                </span>
+              ))
+            ) : (
+              <span className="text-gray-500 text-sm italic">
+                No tags available
               </span>
-            ))}
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-5">
-          <button className="flex items-center gap-1 sm:gap-2 border border-gray-300 rounded-xl px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm hover:bg-[#E6EDE2] transition">
-            <FaPhoneAlt className="text-[#2D7B67] w-3 h-3 sm:w-4 sm:h-4" />
-            {contact || "+91 91234 56789"}
-          </button>
-          <button className="flex items-center gap-1 sm:gap-2 border border-gray-300 rounded-xl px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm hover:bg-[#E6EDE2] transition">
-            <FaWhatsapp className="text-[#2D7B67] w-3 h-3 sm:w-4 sm:h-4" />
-            Whatsapp
-          </button>
+        {/* Contact Actions */}
+        <div className="flex items-center gap-3 mb-4">
+          <motion.button
+            variants={buttonVariants}
+            whileHover="hover"
+            whileTap="tap"
+            className="flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl px-3 sm:px-4 py-1.5 text-sm sm:text-base hover:shadow-sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              window.location.href = `tel:${normalizedContact}`;
+            }}
+          >
+            <FaPhoneAlt className="w-4 h-4" />
+            {normalizedContact}
+          </motion.button>
+          <motion.button
+            variants={buttonVariants}
+            whileHover="hover"
+            whileTap="tap"
+            className="flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl px-3 sm:px-4 py-1.5 text-sm sm:text-base hover:shadow-sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              window.location.href = `https://wa.me/${normalizedContact.replace(
+                /\D/g,
+                ""
+              )}`;
+            }}
+          >
+            <FaWhatsapp className="w-4 h-4" />
+            WhatsApp
+          </motion.button>
         </div>
 
-        <div className="absolute -bottom-3 right-3 sm:right-4">
-          <button className="flex items-center gap-1 sm:gap-2 bg-[#E6EDE2] text-xs sm:text-sm px-3 sm:px-4 py-1 sm:py-1.5 rounded-lg hover:bg-[#d7e0d5] transition">
-            <BsChatTextFill className="w-4 h-4 sm:w-5 sm:h-5 text-[#2D7B67]" />
-            Enquiry →
-          </button>
-        </div>
+        {/* Enquiry Button */}
+        <motion.button
+          variants={buttonVariants}
+          whileHover="hover"
+          whileTap="tap"
+          className="absolute -bottom-3 right-3 bg-emerald-600 text-white px-4 sm:px-5 py-1.5 sm:py-2 rounded-lg text-sm sm:text-base flex items-center gap-2 shadow-md hover:shadow-lg"
+          onClick={() => navigate(`/institute/overview/${id || "unknown"}`)}
+        >
+          <BsChatTextFill className="w-4 h-4 sm:w-5 sm:h-5" />
+          Enquiry →
+        </motion.button>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

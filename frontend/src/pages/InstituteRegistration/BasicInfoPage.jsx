@@ -40,7 +40,37 @@ const VALIDATION_RULES = {
 
 // Medium and Exam options
 const TEACHING_MEDIUMS = ["online", "offline", "hybrid"];
-const EXAM_OPTIONS = ["jee", "neet", "cuet", "upsc", "ssc", "other"];
+const EXAM_OPTIONS = [
+  "jee",
+  "neet",
+  "cuet",
+  "boards",
+  "upsc",
+  "ssc",
+  "gate",
+  "cat",
+  "mat",
+  "xat",
+  "nda",
+  "clat",
+  "afcat",
+  "railways",
+  "bank po",
+  "ibps",
+  "rrb",
+  "ugc net",
+  "cet",
+  "tet",
+  "npat",
+  "snap",
+  "iift",
+  "nift",
+  "icai",
+  "cs",
+  "ca",
+  "other"
+];
+
 const LOCAL_STORAGE_KEY = "instituteBasicInfoForm";
 const LOCAL_STORAGE_LOGO_KEY = "instituteLogoPreview";
 
@@ -75,6 +105,9 @@ const BasicInfoPage = () => {
 
         if (response.status === 200 && response.data.data.basic_info) {
           const savedData = JSON.parse(response.data.data.basic_info);
+
+          console.log("basic info fetch data", savedData);
+          
           setFormData({
             ...defaultFormData,
             ...savedData,

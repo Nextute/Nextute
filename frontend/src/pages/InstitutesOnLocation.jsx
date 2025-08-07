@@ -1,454 +1,443 @@
-import React, { useEffect, useState, useRef } from "react";
-import { useLocation } from "react-router-dom";
-import { FaLocationDot } from "react-icons/fa6";
-import { Search } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { Search, X } from "lucide-react";
+import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import Card from "../components/Card";
-import Footer from "../components/Footer";
-import { FaTimes } from "react-icons/fa";
-import axios from "axios";
-import { useContext } from "react";
-import { AppContext } from "../context/AppContext";
+import LoadingSpinner from "../components/LoadingSpinner";
+import { assets } from "../assets/assets";
+import useInstitutes from "../hooks/useInstitutes";
 
-const filters = {
-  distance: [
-    { id: "1-3km", name: "1-3 km" },
-    { id: "3-5km", name: "3-5 km" },
-    { id: "nearby", name: "Nearby" },
-    { id: "all", name: "All" },
-  ],
-  courseType: [
-    { id: "JEE", name: "JEE" },
-    { id: "NEET", name: "NEET" },
-    { id: "UPSC", name: "UPSC" },
-    { id: "CAT", name: "CAT" },
-    { id: "Boards", name: "Class 9-12 (Boards)" },
-    { id: "Coding", name: "Coding/Computer Courses" },
-    { id: "all", name: "All" },
-  ],
-  rating: [
-    { id: "4+", name: "4+ (Excellent)" },
-    { id: "3+", name: "3+ (Good)" },
-    { id: "all", name: "All" },
-  ],
-  modeOfTeaching: [
-    { id: "online", name: "Online" },
-    { id: "offline", name: "Offline" },
-    { id: "hybrid", name: "Hybrid" },
-    { id: "all", name: "All" },
-  ],
-};
+function parseJSONSafe(str) {
+  try {
+    return typeof str === "string" ? JSON.parse(str) : str;
+  } catch {
+    return {};
+  }
+}
 
-const InstitutesOnLocation = () => {
-  const [activeFilters, setActiveFilters] = useState({
-    distance: "all",
-    courseType: "all",
-    rating: "all",
-    modeOfTeaching: "all",
-  });
-  const [institutes, setInstitutes] = useState([]); // Original API data
-  const [filteredInstitutes, setFilteredInstitutes] = useState([]); // Filtered data
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [locationQuery, setLocationQuery] = useState("Hajipur");
-  const [showFilterDropdown, setShowFilterDropdown] = useState(null);
+const InstituteOnLocation = () => {
   const location = useLocation();
-  const filterRef = useRef(null);
-  const { VITE_BACKEND_BASE_URL } = useContext(AppContext);
+  const navigate = useNavigate();
+  const searchParams = new URLSearchParams(location.search);
+  const query = searchParams.get("q")?.toLowerCase() || "";
+  const selectedCity = searchParams.get("city")?.toLowerCase() || "";
+  const [searchInput, setSearchInput] = useState(query);
 
-  // Fetch institutes from backend using axios
-  useEffect(() => {
-    const fetchInstitutes = async () => {
-      setLoading(true);
-      try {
-        console.log("Fetching institutes from /api/institutes...");
-        const response = await axios.get(`${VITE_BACKEND_BASE_URL}/api/institutes/institutes-data`);
-        console.log("Response status:", response.status);
-        console.log("Response data:", response.data);
+  const { institutes: institutesData, loading, error } = useInstitutes();
 
-        if (response.status !== 200) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
+  // Filter states
+  const [courseType, setCourseType] = useState("All");
+  const [feeRange, setFeeRange] = useState("Any");
+  const [rating, setRating] = useState("Any");
+  const [batchTiming, setBatchTiming] = useState("Any");
+  const [language, setLanguage] = useState("Any");
 
-        // Ensure response.data is an array
-        if (!Array.isArray(response.data)) {
-          console.error("Response data is not an array:", response.data);
-          throw new Error("Invalid response format: Expected an array");
-        }
-
-        // Parse JSON fields if necessary
-        const parsedData = response.data.map((institute) => {
-          try {
-            return {
-              ...institute,
-              courses:
-                typeof institute.courses === "string"
-                  ? JSON.parse(institute.courses)
-                  : institute.courses || [],
-              basic_info:
-                typeof institute.basic_info === "string"
-                  ? JSON.parse(institute.basic_info)
-                  : institute.basic_info || {},
-              contact_details:
-                typeof institute.contact_details === "string"
-                  ? JSON.parse(institute.contact_details)
-                  : institute.contact_details || {},
-            };
-          } catch (parseError) {
-            console.error(
-              `Error parsing JSON for institute ${institute.institute_id}:`,
-              parseError
-            );
-            return institute; // Fallback to raw institute data
-          }
-        });
-
-        setInstitutes(parsedData);
-        setFilteredInstitutes(parsedData);
-        setError(null);
-        console.log("Institutes set successfully:", parsedData);
-      } catch (err) {
-        console.error("Fetch institutes error:", {
-          message: err.message,
-          response: err.response
-            ? {
-                status: err.response.status,
-                data: err.response.data,
-              }
-            : "No response data",
-        });
-        setError("Failed to load institutes. Please try again later.");
-      } finally {
-        setLoading(false);
-        console.log("Fetch institutes complete, loading:", false);
-      }
-    };
-    fetchInstitutes();
-  }, []);
-
-  // Extract query from URL and set location
-  useEffect(() => {
-    const query = new URLSearchParams(location.search).get("query") || "";
-    console.log("URL query:", query);
-    setSearchQuery(query);
-    setLocationQuery(query || "Hajipur");
-  }, [location.search]);
-
-  // Filter logic
-  useEffect(() => {
-    console.log("Applying filters with:", { searchQuery, activeFilters });
-    let filtered = [...institutes];
-
-    if (searchQuery) {
-      filtered = filtered.filter((institute) => {
-        const matches =
-          institute.institute_name
-            ?.toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          institute.contact_details?.address
-            ?.toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          institute.courses?.some((course) =>
-            course.toLowerCase().includes(searchQuery.toLowerCase())
-          );
-        console.log(
-          `Institute ${institute.institute_name || "Unknown"} matches search:`,
-          matches
-        );
-        return matches;
-      });
-    }
-
-    if (activeFilters.distance !== "all") {
-      if (activeFilters.distance === "nearby") {
-        filtered = filtered.filter((institute) => {
-          const matches = institute.basic_info?.distance <= 5;
-          console.log(
-            `Institute ${
-              institute.institute_name || "Unknown"
-            } matches nearby:`,
-            matches
-          );
-          return matches;
-        });
-      } else if (activeFilters.distance === "1-3km") {
-        filtered = filtered.filter((institute) => {
-          const matches =
-            institute.basic_info?.distance >= 1 &&
-            institute.basic_info?.distance <= 3;
-          console.log(
-            `Institute ${institute.institute_name || "Unknown"} matches 1-3km:`,
-            matches
-          );
-          return matches;
-        });
-      } else if (activeFilters.distance === "3-5km") {
-        filtered = filtered.filter((institute) => {
-          const matches =
-            institute.basic_info?.distance > 3 &&
-            institute.basic_info?.distance <= 5;
-          console.log(
-            `Institute ${institute.institute_name || "Unknown"} matches 3-5km:`,
-            matches
-          );
-          return matches;
-        });
-      }
-    }
-
-    if (activeFilters.courseType !== "all") {
-      filtered = filtered.filter((institute) => {
-        const matches = institute.courses?.includes(activeFilters.courseType);
-        console.log(
-          `Institute ${
-            institute.institute_name || "Unknown"
-          } matches courseType ${activeFilters.courseType}:`,
-          matches
-        );
-        return matches;
-      });
-    }
-
-    if (activeFilters.rating !== "all") {
-      if (activeFilters.rating === "4+") {
-        filtered = filtered.filter((institute) => {
-          const matches = institute.basic_info?.rating >= 4;
-          console.log(
-            `Institute ${
-              institute.institute_name || "Unknown"
-            } matches rating 4+:`,
-            matches
-          );
-          return matches;
-        });
-      } else if (activeFilters.rating === "3+") {
-        filtered = filtered.filter((institute) => {
-          const matches = institute.basic_info?.rating >= 3;
-          console.log(
-            `Institute ${
-              institute.institute_name || "Unknown"
-            } matches rating 3+:`,
-            matches
-          );
-          return matches;
-        });
-      }
-    }
-
-    if (activeFilters.modeOfTeaching !== "all") {
-      filtered = filtered.filter((institute) => {
-        const matches =
-          institute.basic_info?.modeOfTeaching === activeFilters.modeOfTeaching;
-        console.log(
-          `Institute ${
-            institute.institute_name || "Unknown"
-          } matches modeOfTeaching ${activeFilters.modeOfTeaching}:`,
-          matches
-        );
-        return matches;
-      });
-    }
-
-    setFilteredInstitutes(filtered);
-    console.log("Filtered institutes:", filtered);
-  }, [searchQuery, activeFilters, institutes]);
-
-  const handleFilterChange = (category, id) => {
-    console.log(`Changing filter: ${category} to ${id}`);
-    setActiveFilters((prev) => ({
-      ...prev,
-      [category]: id === prev[category] ? "all" : id,
+  // Parse and memoize institute data
+  const parsedInstitutes = useMemo(() => {
+    return institutesData.map((institute) => ({
+      ...institute,
+      basic_info: parseJSONSafe(institute.basic_info),
+      contact_details: parseJSONSafe(institute.contact_details),
+      courses: parseJSONSafe(institute.courses),
     }));
-    setShowFilterDropdown(null);
-  };
+  }, [institutesData]);
 
-  const resetFilters = () => {
-    console.log("Resetting all filters");
-    setActiveFilters({
-      distance: "all",
-      courseType: "all",
-      rating: "all",
-      modeOfTeaching: "all",
+  // Memoize filtered data
+  const filteredInstitutes = useMemo(() => {
+    return parsedInstitutes.filter((institute) => {
+      const name = institute.basic_info?.institute_name?.toLowerCase() || "";
+      const address =
+        institute.contact_details?.headOffice?.address?.toLowerCase() || "";
+      const city =
+        institute.contact_details?.headOffice?.city?.toLowerCase() || "";
+      const exams = Array.isArray(institute.basic_info?.exams)
+        ? institute.basic_info.exams.map((exam) => exam.toLowerCase())
+        : [];
+      const courses = Array.isArray(institute.courses?.courses)
+        ? institute.courses.courses
+        : [];
+      const instRating = parseFloat(institute.rating) || 0;
+      const instLanguage =
+        courses.find((course) => course.medium)?.medium?.toLowerCase() || "";
+
+      // Query match: Check name, address, city, or exams
+      const matchesQuery =
+        !query ||
+        name.includes(query) ||
+        address.includes(query) ||
+        city.includes(query) ||
+        exams.some((exam) => exam.includes(query));
+
+      // Course type filter: Check basic_info.exams
+      const matchesCourse =
+        courseType === "All" || exams.includes(courseType.toLowerCase());
+
+      // Fee range filter: Check courses.courses[].feeRange
+      const matchesFee =
+        feeRange === "Any" ||
+        courses.some((course) => {
+          const feeStr = course.feeRange?.toLowerCase() || "";
+          return (
+            (feeRange === "Below ₹20,000" &&
+              (feeStr.includes("2k-5k") || feeStr.includes("5k-15k"))) ||
+            (feeRange === "₹20,000 - ₹50,000" && feeStr.includes("15k-50k")) ||
+            (feeRange === "Above ₹50,000" && feeStr.includes("50k+"))
+          );
+        });
+
+      // Rating filter
+      const matchesRating =
+        rating === "Any" || instRating >= parseFloat(rating);
+
+      // Batch timing filter (placeholder, as data not available)
+      const matchesTiming = batchTiming === "Any";
+
+      // Language filter
+      const matchesLang =
+        language === "Any" || instLanguage.includes(language.toLowerCase());
+
+      // City filter
+      const matchesCity = !selectedCity || city.includes(selectedCity);
+
+      return (
+        matchesQuery &&
+        matchesCourse &&
+        matchesFee &&
+        matchesRating &&
+        matchesTiming &&
+        matchesLang &&
+        matchesCity
+      );
     });
+  }, [
+    parsedInstitutes,
+    query,
+    selectedCity,
+    courseType,
+    feeRange,
+    rating,
+    batchTiming,
+    language,
+  ]);
+
+  const handleClearFilters = () => {
+    setCourseType("All");
+    setFeeRange("Any");
+    setRating("Any");
+    setBatchTiming("Any");
+    setLanguage("Any");
+    setSearchInput("");
+    navigate(
+      `/institutes-on-location${selectedCity ? `?city=${selectedCity}` : ""}`
+    );
   };
 
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchInput.trim()) {
+      navigate(
+        `/institutes-on-location?q=${encodeURIComponent(searchInput.trim())}${
+          selectedCity ? `&city=${selectedCity}` : ""
+        }`
+      );
+    } else {
+      navigate(
+        `/institutes-on-location${selectedCity ? `?city=${selectedCity}` : ""}`
+      );
+    }
+  };
+
+  // Sync search input with query param on page load or query change
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (filterRef.current && !filterRef.current.contains(event.target)) {
-        console.log("Closing filter dropdown");
-        setShowFilterDropdown(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    setSearchInput(query);
+  }, [query]);
+
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1, delayChildren: 0.3 },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.6, ease: "easeOut" },
+    },
+  };
 
   return (
-    <div className="w-full min-h-screen overflow-x-hidden bg-gray-50">
-      <div className="w-full max-w-[90rem] mx-auto">
-        <Navbar />
-      </div>
+    <>
+      <Navbar />
 
-      <div className="w-full max-w-[86rem] flex flex-col md:flex-row items-center justify-between gap-10 mx-auto px-4 sm:px-6 py-8">
-        <h1 className="w-full md:w-1/2 text-4xl sm:text-5xl font-bold text-[#002639]">
-          Popular Tutorials in {locationQuery}
-        </h1>
-
-        <div className="flex items-center w-full md:w-1/2 h-14 sm:h-16 shadow-lg border border-gray-200 rounded-full overflow-hidden bg-white">
-          <div className="flex items-center gap-3 px-4 w-full">
-            <FaLocationDot className="text-green-600 size-5 sm:size-6" />
-            <input
-              type="text"
-              placeholder="Search by name or location..."
-              className="outline-none w-full text-gray-700 text-lg placeholder-gray-500"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === "Enter" && searchQuery.trim()) {
-                  console.log("Search triggered with query:", searchQuery);
-                  window.location.href = `/institutes-on-location?query=${encodeURIComponent(
-                    searchQuery
-                  )}`;
-                }
-              }}
-              aria-label="Search by name or location"
-            />
-          </div>
-          <button
-            onClick={() => {
-              if (searchQuery.trim()) {
-                console.log("Search button clicked with query:", searchQuery);
-                window.location.href = `/institutes-on-location?query=${encodeURIComponent(
-                  searchQuery
-                )}`;
-              }
-            }}
-            className="px-4 py-2 bg-[#2D7B67] text-white rounded-r-full hover:bg-[#256a57] transition"
-            aria-label="Search institutes"
-          >
-            <Search className="size-5 sm:size-6" />
-          </button>
-        </div>
-      </div>
-
-      <div className="w-full max-w-[86rem] mx-auto px-4 sm:px-6 mb-8">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-wrap gap-2 sm:gap-4">
-            {Object.keys(filters).map((category) => (
-              <div key={category} className="relative" ref={filterRef}>
+      <motion.div
+        className="w-full max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/80 min-h-screen"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {/* Header and Search Bar */}
+        <motion.div className="mb-10 sm:mb-12 md:mb-16" variants={itemVariants}>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6">
+            <div>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 tracking-tight">
+                {selectedCity ? (
+                  <>
+                    Institutes in{" "}
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-500">
+                      {selectedCity.charAt(0).toUpperCase() +
+                        selectedCity.slice(1)}
+                    </span>
+                  </>
+                ) : query ? (
+                  <>
+                    Results for{" "}
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-500">
+                      "{query.toUpperCase()}"
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    Find Your{" "}
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-500">
+                      Perfect Institute
+                    </span>
+                  </>
+                )}
+              </h1>
+              <p className="mt-3 text-base sm:text-lg md:text-xl text-gray-600 max-w-xl">
+                Discover top coaching institutes tailored to your goals with
+                advanced filters and search.
+              </p>
+            </div>
+            <form
+              onSubmit={handleSearch}
+              className="relative w-full sm:w-80 md:w-96"
+            >
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Search institutes, courses, or locations..."
+                className="w-full py-3 pl-12 pr-4 text-sm sm:text-base bg-white/80 backdrop-blur-sm border border-gray-200 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition duration-300"
+                aria-label="Search institutes"
+              />
+              <button
+                type="submit"
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-emerald-600 transition duration-200"
+                aria-label="Submit search"
+              >
+                <Search className="w-5 h-5" />
+              </button>
+              {searchInput && (
                 <button
+                  type="button"
                   onClick={() => {
-                    console.log(`Opening filter dropdown for ${category}`);
-                    setShowFilterDropdown(
-                      showFilterDropdown === category ? null : category
+                    setSearchInput("");
+                    navigate(
+                      `/institutes-on-location${
+                        selectedCity ? `?city=${selectedCity}` : ""
+                      }`
                     );
                   }}
-                  className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 text-sm sm:text-base hover:bg-gray-100 transition"
-                  aria-label={`Filter by ${category}`}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-emerald-600 transition duration-200"
+                  aria-label="Clear search"
                 >
-                  {category.charAt(0).toUpperCase() +
-                    category
-                      .slice(1)
-                      .replace(/([A-Z])/g, " $1")
-                      .trim()}
-                  <span className="text-gray-500">
-                    {filters[category].find(
-                      (item) => item.id === activeFilters[category]
-                    )?.name || "All"}
-                  </span>
+                  <X className="w-5 h-5" />
                 </button>
-                {showFilterDropdown === category && (
-                  <div className="absolute z-10 mt-2 w-48 bg-white border border-gray-300 rounded-lg shadow-lg">
-                    {filters[category].map((item) => (
-                      <div
-                        key={item.id}
-                        onClick={() => handleFilterChange(category, item.id)}
-                        className={`px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer ${
-                          activeFilters[category] === item.id
-                            ? "bg-[#2D7B67] text-white"
-                            : "text-gray-700"
-                        }`}
-                      >
-                        {item.name}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
+              )}
+            </form>
           </div>
-          <button
-            onClick={resetFilters}
-            className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm sm:text-base hover:bg-red-600 transition"
-            aria-label="Clear all filters"
-          >
-            Clear All Filters
-          </button>
-        </div>
-        <div className="flex flex-wrap gap-2 mt-4">
-          {Object.entries(activeFilters).map(
-            ([category, id]) =>
-              id !== "all" && (
-                <div
-                  key={category}
-                  className="flex items-center gap-1 px-3 py-1 bg-[#2D7B67] text-white text-sm rounded-full"
-                >
-                  {filters[category].find((item) => item.id === id)?.name || id}
-                  <FaTimes
-                    className="size-4 cursor-pointer"
-                    onClick={() => handleFilterChange(category, "all")}
-                  />
-                </div>
-              )
-          )}
-        </div>
-      </div>
+        </motion.div>
 
-      <div className="w-full max-w-[86rem] px-4 sm:px-6 py-6 sm:py-8 mx-auto mb-8">
-        <p className="text-black bg-gray-200 px-4 py-6 sm:px-6 sm:py-8 rounded-2xl text-3xl md:text-6xl lg:text-8xl text-center font-bold">
-          Advertisement
-        </p>
-      </div>
-
-      {loading ? (
-        <div className="w-full max-w-[88rem] mx-auto sm:mx-20 px-3 sm:px-4 py-6 sm:py-8 gap-4 sm:gap-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {[...Array(6)].map((_, i) => (
+        {/* Filters */}
+        <motion.div
+          className="flex flex-wrap gap-3 sm:gap-4 lg:gap-5 mb-8 sm:mb-10 md:mb-12"
+          variants={itemVariants}
+        >
+          {[
+            {
+              label: "Course Type",
+              value: courseType,
+              onChange: setCourseType,
+              options: [
+                "All",
+                "JEE",
+                "NEET",
+                "GATE",
+                "NIFT",
+                "SSC CGL",
+                "UPSC",
+                "NDA",
+                "CLAT",
+                "CAT",
+                "CUET",
+                "CDS",
+                "AFCAT",
+              ],
+            },
+            {
+              label: "Fee Range",
+              value: feeRange,
+              onChange: setFeeRange,
+              options: [
+                "Any",
+                "Below ₹20,000",
+                "₹20,000 - ₹50,000",
+                "Above ₹50,000",
+              ],
+            },
+            {
+              label: "Rating",
+              value: rating,
+              onChange: setRating,
+              options: ["Any", "4.5", "4.0", "3.5"],
+            },
+            {
+              label: "Batch Timing",
+              value: batchTiming,
+              onChange: setBatchTiming,
+              options: ["Any", "Morning", "Afternoon", "Evening"],
+              disabled: true,
+            },
+            {
+              label: "Language",
+              value: language,
+              onChange: setLanguage,
+              options: ["Any", "English", "Hindi", "Bilingual"],
+            },
+          ].map((filter, idx) => (
             <div
-              key={i}
-              className="w-full max-w-[24rem] sm:max-w-[25rem] bg-white border border-gray-200 rounded-xl shadow-sm animate-pulse"
+              key={idx}
+              className="flex flex-col min-w-[7rem] sm:min-w-[8.5rem] md:min-w-[10rem]"
             >
-              <div className="w-full aspect-[4/3] bg-gray-200 rounded-t-xl"></div>
-              <div className="p-4 space-y-3">
-                <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-                <div className="flex items-center justify-between">
-                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-                </div>
-                <div className="h-4 bg-gray-200 rounded w-full"></div>
-              </div>
+              <label className="text-xs sm:text-sm font-semibold text-gray-800 mb-1.5 tracking-wide">
+                {filter.label}
+              </label>
+              <select
+                className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm sm:text-base bg-white/90 backdrop-blur-sm shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                value={filter.value}
+                onChange={(e) => filter.onChange(e.target.value)}
+                disabled={filter.disabled}
+                aria-label={`Filter by ${filter.label}`}
+              >
+                {filter.options.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </div>
           ))}
-        </div>
-      ) : error ? (
-        <div className="text-center p-4 text-red-500 text-lg">{error}</div>
-      ) : filteredInstitutes.length === 0 ? (
-        <div className="text-center p-4 text-gray-600 text-lg">
-          No results found for "{searchQuery}"
-        </div>
-      ) : (
-        <div className="w-full max-w-[88rem] mx-auto sm:mx-20 px-3 sm:px-4 py-6 sm:py-8 gap-4 sm:gap-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 space-y-4 sm:space-y-0">
-          {filteredInstitutes.map((institute) => (
-            <Card key={institute.institute_id} institute={institute} />
-          ))}
-        </div>
-      )}
 
-      <div className="w-full mt-8">
-        <Footer />
-      </div>
-    </div>
+          {/* Clear Filters */}
+          <div className="flex items-end">
+            <motion.button
+              whileHover={{
+                scale: 1.05,
+                boxShadow: "0 8px 16px rgba(0, 0, 0, 0.1)",
+              }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleClearFilters}
+              className="bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-semibold px-5 sm:px-6 py-2.5 rounded-xl shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 transition duration-300 text-sm sm:text-base"
+            >
+              Clear All
+            </motion.button>
+          </div>
+        </motion.div>
+
+        {/* Results */}
+        <AnimatePresence mode="wait">
+          {loading ? (
+            <motion.div
+              key="loading"
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+            >
+              <LoadingSpinner />
+            </motion.div>
+          ) : error ? (
+            <motion.div
+              key="error"
+              className="text-center py-16 text-red-500 text-base sm:text-lg md:text-xl font-semibold bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6"
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+            >
+              {error}
+            </motion.div>
+          ) : filteredInstitutes.length === 0 ? (
+            <motion.div
+              key="no-results"
+              className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center p-8 sm:p-10 md:p-12 bg-white/90 backdrop-blur-sm rounded-2xl border border-gray-100 shadow-xl hover:shadow-2xl transition-all duration-300"
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+            >
+              <img
+                src={
+                  assets.Not_found ||
+                  "https://via.placeholder.com/200?text=No+Image"
+                }
+                alt="No institutes found"
+                className="w-40 h-40 sm:w-52 sm:h-52 md:w-64 md:h-64 mb-6 opacity-90"
+                loading="lazy"
+              />
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-4 text-center">
+                No Institutes Found
+              </h2>
+              <p className="text-sm sm:text-base md:text-lg text-gray-600 font-normal text-center max-w-lg mb-6">
+                We couldn't find any institutes matching your criteria for{" "}
+                <span className="font-semibold text-emerald-600">
+                  {selectedCity
+                    ? selectedCity.charAt(0).toUpperCase() +
+                      selectedCity.slice(1)
+                    : query || "your search"}
+                </span>
+                . Try different filters or search terms.
+              </p>
+              <motion.button
+                whileHover={{
+                  scale: 1.05,
+                  boxShadow: "0 8px 16px rgba(0, 0, 0, 0.1)",
+                }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleClearFilters}
+                className="bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-semibold px-6 py-2.5 rounded-xl shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 transition duration-300 text-sm sm:text-base"
+              >
+                Reset Filters
+              </motion.button>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="results"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3  gap-4 sm:gap-6 lg:gap-8"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+            >
+              {filteredInstitutes.map((institute) => (
+                <Card key={institute.id} institute={institute} />
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+
+      <Footer />
+    </>
   );
 };
 
-export default InstitutesOnLocation;
+export default InstituteOnLocation;

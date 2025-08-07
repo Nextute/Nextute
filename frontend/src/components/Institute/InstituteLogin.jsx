@@ -6,9 +6,12 @@ import { toast } from "react-hot-toast";
 import { Eye, EyeOff } from "lucide-react";
 import { AppContext } from "../../context/AppContext";
 import { useNavigate } from "react-router-dom";
-import { parsePhoneNumberFromString } from "libphonenumber-js";
+import axios from "axios";
+import PhoneNumberValidator from "../../context/PhoneNumberValidator.jsx";
+import LoadingSpinner from "../LoadingSpinner.jsx";
 
 const sanitizeInput = (input) => input.replace(/[<>]/g, "");
+
 const cleanPhoneNumber = (phone) => phone.replace(/[\s.-]/g, "");
 
 const validateInput = (input, defaultCountry = "IN") => {
@@ -71,6 +74,27 @@ const InstituteLogin = () => {
   } = useContext(AppContext);
   const navigate = useNavigate();
 
+  const validateInput = (input) => {
+    if (input.includes("@")) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const isValid = emailRegex.test(input);
+      return {
+        type: "email",
+        isValid,
+        value: input,
+        error: isValid ? "" : "Please enter a valid email address.",
+      };
+    } else {
+      const phoneValidation = PhoneNumberValidator(input);
+      return {
+        type: "phone",
+        isValid: phoneValidation.isValid,
+        value: phoneValidation.e164 || input,
+        error: phoneValidation.isValid ? "" : phoneValidation.error,
+      };
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     const sanitizedValue = sanitizeInput(value);
@@ -110,12 +134,12 @@ const InstituteLogin = () => {
     }
 
     const validation = validateInput(sanitizedLoginInput);
-
     if (!validation.isValid) {
       setErrors((prev) => ({
         ...prev,
         loginInput: validation.error,
       }));
+
       return toast.error(validation.error);
     }
 
@@ -131,51 +155,65 @@ const InstituteLogin = () => {
     if (validation.type === "email") {
       payload.email = sanitizedLoginInput;
     } else {
-      payload.phone = sanitizedLoginInput;
+      payload.phone = validation.value;
     }
 
     setLoading(true);
     try {
-      const response = await fetch(
+      const response = await axios.post(
         `${VITE_BACKEND_BASE_URL}/api/institutes/auth/login`,
+        payload,
         {
-          method: "POST",
+          withCredentials: true,
           headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(payload),
         }
       );
 
-      const data = await response.json();
+      if (response.status === 200) {
+        toast.success("Login successful!");
+        setUser(response.data.user);
+        setUserType("institute");
+        setShouldFetchUser(true);
+        setShowLogin(false);
+        resetForm();
 
-      if (!response.ok) {
-        throw new Error(data.message || "Login failed.");
+        // Store token in cookie if rememberMe is checked
+        if (rememberMe) {
+          const expiry = new Date(
+            Date.now() + 7 * 24 * 60 * 60 * 1000
+          ).toUTCString();
+          document.cookie = `authToken=${response.data.token}; path=/; expires=${expiry}; SameSite=Strict; Secure`;
+        }
+
+        // Store user data in sessionStorage
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+        localStorage.setItem("userType", "institute");
+        sessionStorage.removeItem("verify_email");
+        sessionStorage.removeItem("verify_user_type");
       }
 
-      toast.success("Login successful!");
-      setUser(data.user);
-      setUserType("institute");
-      setShouldFetchUser(true);
-      setShowLogin(false);
-      resetForm();
       navigate("/");
     } catch (error) {
-      toast.error(error.message || "Login failed. Please try again.");
+      const message =
+        error.response?.status === 401
+          ? "Invalid credentials."
+          : error.response?.data?.message || "Login failed. Please try again.";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen">
-      {/* Logo Section */}
+    <div className="min-h-screen bg-[#f2fffc]">
       <img
         src={assets.logo || "/fallback-logo.png"}
         alt="Company Logo"
-        className="w-32 sm:w-40 flex justify-start ml-20"
+        className="w-32 sm:w-40 flex justify-start ml-20 cursor-pointer"
+        onClick={() => navigate("/")}
+        aria-label="Navigate to Home"
       />
 
-      {/* Login Form Section */}
       <div className="flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 -mt-4">
         <div className="w-full max-w-md sm:max-w-lg lg:max-w-xl flex flex-col items-center">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
@@ -191,11 +229,11 @@ const InstituteLogin = () => {
               Sign Up
             </button>
           </div>
+
           <h1 className="text-3xl sm:text-4lg lg:text-5xl text-[#204B55] font-semibold mb-8">
             Institute Login
           </h1>
 
-          {/* Form Inputs */}
           <form
             className="w-full flex flex-col items-center space-y-6"
             onSubmit={onSubmitHandler}
@@ -298,7 +336,6 @@ const InstituteLogin = () => {
               </p>
             )}
 
-            {/* Login Button */}
             <button
               type="submit"
               className="w-full sm:w-auto bg-[#1F4C56] text-white px-8 py-3 rounded-full text-lg sm:text-xl font-semibold hover:bg-[#2D7B67] focus:outline-none focus:ring-2 focus:ring-[#2D7B67] transition duration-300"
@@ -306,16 +343,12 @@ const InstituteLogin = () => {
               aria-label="Sign In"
             >
               {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Logging in...
-                </span>
+                <LoadingSpinner />
               ) : (
                 "Sign In"
               )}
             </button>
 
-            {/* Remember Me and Forgot Password */}
             <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
               <div className="flex items-center gap-2">
                 <label className="inline-flex items-center cursor-pointer">

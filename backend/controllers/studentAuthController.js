@@ -5,6 +5,7 @@ import {
   createStudent,
   findStudentByEmail,
   findStudentByPhone,
+  updateStudentResendVerificationCode,
   verifyStudent,
 } from "../models/studentModel.js";
 import { handleError } from "../utils/errorHandler.js";
@@ -19,7 +20,7 @@ export const signup = [
     .withMessage("Password must be at least 8 characters"),
   body("gender")
     .optional()
-    .isIn(["Male", "Female", "Other"])
+    .isIn(["Male", "Female", "Other", "Prefer not to say"])
     .withMessage("Invalid gender"),
   body("phoneNumber")
     .optional()
@@ -30,20 +31,32 @@ export const signup = [
     .isISO8601()
     .toDate()
     .withMessage("Invalid date of birth"),
-    
+
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return handleError(res, 400, errors.array()[0].msg, "VALIDATION_ERROR");
     }
 
-    const { name, email, password, gender, phoneNumber, dateOfBirth } = req.body;
-    const existing = await findStudentByEmail(email);
-    if (existing) {
-      return handleError(res, 400, "Email already exists", "EMAIL_EXISTS");
-    }
+    const { name, email, password, gender, phoneNumber, dateOfBirth } =
+      req.body;
 
     try {
+      const existingEmail = await findStudentByEmail(email);
+      if (existingEmail) {
+        return handleError(res, 400, "Email already exists", "EMAIL_EXISTS");
+      }
+
+      const existingPhone = await findStudentByPhone(phoneNumber);
+      if (existingPhone) {
+        return handleError(
+          res,
+          400,
+          "Phone number already exists",
+          "PHONE_EXISTS"
+        );
+      }
+
       const hashedPassword = await bcrypt.hash(password, 10);
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
@@ -61,12 +74,12 @@ export const signup = [
 
       const student = await createStudent(studentData);
       const token = createSecretToken(student.id, "student");
-      console.log("Signup - Student:", student, "Token:", token); // Debug
+      console.log("Signup - Student:", student, "Token:", token);
 
       res.cookie("authToken", token, {
         httpOnly: true,
-        secure: true, // Always true in production (HTTPS)
-        sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict", // Cross-origin fix
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
@@ -76,7 +89,7 @@ export const signup = [
           status: true,
           message: "Verification code sent",
           token,
-          user: student,
+          user: { id: student.id, name, email },
         });
       } catch (emailErr) {
         console.error("Email error (user still created):", emailErr);
@@ -85,7 +98,7 @@ export const signup = [
           message:
             "Account created! Check your email. If you don’t receive a code, contact support.",
           token,
-          user: student,
+          user: { id: student.id, name, email },
         });
       }
     } catch (err) {
@@ -117,11 +130,11 @@ export const verifyCode = [
       const student = await findStudentByEmail(email);
       const now = new Date();
 
-      if (
-        !student ||
-        student.code !== code ||
-        new Date(student.code_expires_at) < now
-      ) {
+      if (!student) {
+        return handleError(res, 404, "Email not found", "EMAIL_NOT_FOUND");
+      }
+
+      if (student.code !== code || new Date(student.code_expires_at) < now) {
         return handleError(
           res,
           400,
@@ -130,8 +143,25 @@ export const verifyCode = [
         );
       }
 
-      await verifyStudent(email);
-      return res.status(200).json({ status: true, message: "Email verified" });
+      const updatedStudent = await verifyStudent(email);
+      const token = createSecretToken(updatedStudent.id, "student");
+
+      res.cookie("authToken", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      return res.status(200).json({
+        status: true,
+        message: "Email verified",
+        user: {
+          id: updatedStudent.id,
+          name: updatedStudent.name,
+          email: updatedStudent.email,
+        },
+      });
     } catch (err) {
       console.error("Verification error:", err);
       return handleError(
@@ -139,6 +169,72 @@ export const verifyCode = [
         500,
         "Server error during email verification",
         "VERIFICATION_ERROR"
+      );
+    }
+  },
+];
+
+// Resend verification code to the student's email
+export const resendVerificationCode = [
+  body("email").isEmail().normalizeEmail().withMessage("Invalid email format"),
+
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return handleError(res, 400, errors.array()[0].msg, "VALIDATION_ERROR");
+    }
+
+    const { email } = req.body;
+
+    try {
+      const student = await findStudentByEmail(email);
+
+      if (!student) {
+        return handleError(res, 404, "Email not found", "EMAIL_NOT_FOUND");
+      }
+
+      if (student.is_verified) {
+        return handleError(
+          res,
+          400,
+          "Email is already verified",
+          "ALREADY_VERIFIED"
+        );
+      }
+
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // valid for 10 mins
+
+      console.log(`[DEBUG] Resent OTP code for ${email}: ${code}`);
+
+      student.code = code;
+      student.code_expires_at = expiresAt;
+
+      // Update code in DB
+      await updateStudentResendVerificationCode(email, code, expiresAt);
+
+      try {
+        await sendVerificationEmail(email, code);
+        return res.status(200).json({
+          status: true,
+          message: "Verification code resent successfully",
+        });
+      } catch (emailErr) {
+        console.error("Email sending failed:", emailErr);
+        return handleError(
+          res,
+          500,
+          "Failed to send email. Try again later.",
+          "EMAIL_SEND_FAILED"
+        );
+      }
+    } catch (err) {
+      console.error("Resend verification error:", err);
+      return handleError(
+        res,
+        500,
+        "Server error during resend verification",
+        "RESEND_ERROR"
       );
     }
   },
@@ -198,12 +294,12 @@ export const login = [
 
       const { password: _, code, ...safeStudent } = student;
       const token = createSecretToken(student.id, "student");
-      console.log("Login - Student:", safeStudent, "Token:", token); // Debug
+      console.log("Login - Student:", safeStudent, "Token:", token);
 
       res.cookie("authToken", token, {
         httpOnly: true,
-        secure: true, // Always true in production
-        sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict", // Cross-origin fix
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
@@ -224,10 +320,14 @@ export const login = [
 export const getStudentProfile = async (req, res) => {
   try {
     const student = req.student;
-    console.log("Profile - Student:", student); // Debug
+    console.log("Profile - Student:", student);
 
     if (!student) {
       return handleError(res, 404, "Student not found", "STUDENT_NOT_FOUND");
+    }
+
+    if (!student.is_verified) {
+      return handleError(res, 403, "Email not verified", "EMAIL_NOT_VERIFIED");
     }
 
     const { password, code, ...safeStudent } = student;
@@ -244,10 +344,10 @@ export const getStudentProfile = async (req, res) => {
 // Logout student
 export const logout = async (req, res) => {
   try {
-    console.log("Logout request received", req.cookies); // Debug
+    console.log("Logout request received", req.cookies);
     res.clearCookie("authToken", {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
     });
     return res.status(200).json({ status: true, message: "Logout successful" });

@@ -1,11 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
 @import 'leaflet/dist/leaflet.css';
 
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
 
 * {
   box-sizing: border-box;
@@ -13,26 +11,23 @@
   
 }
 
+
+
 html, body {
   height: 100%;
   overflow-y: auto;
   scroll-behavior: smooth;
 }
 
-
 @layer utilities {
-  /* Base styles for nav links */
   .nav-link {
     @apply px-4 py-2 font-medium text-gray-700 transition-colors duration-300 rounded-md;
   }
 
-
-  /* Active nav link base styles */
   .active-nav-link {
     @apply bg-[#1F4C56] text-white rounded-full;
   }
 
-  /* Responsive styles for <p> inside active nav links */
   @media (max-width: 768px) {
     .active-nav-link p {
       @apply text-white bg-[#1F4C56] rounded-full;
@@ -44,3 +39,63 @@ html, body {
 ::-webkit-scrollbar {
     @apply hidden
 }
+
+/* Swiper */
+
+.swiper-button-prev,
+.swiper-button-next {
+  color: #2d7a66 !important;
+  width: 30px;
+  height: 30px;
+  top: 55% !important;
+  transform: translateY(-50%);
+  z-index: 10;
+}
+
+.swiper-button-prev:hover,
+.swiper-button-next:hover {
+  color:#204b54;
+}
+
+.swiper-button-prev {
+  left: -30px !important;
+}
+
+.swiper-button-next {
+  right: -30px !important;
+}
+
+@media (max-width: 1023px) {
+  .swiper-button-prev,
+  .swiper-button-next {
+    display: none !important;
+  }
+}
+
+.swiper {
+  overflow: visible !important;
+}
+
+.swiper-pagination {
+  position: absolute !important;
+  width: 100%;
+  text-align: center;
+}
+
+.swiper-pagination-bullet {
+  background-color: #5c5e5e !important;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  opacity: 1;
+  margin: 0 6px !important;
+}
+
+.swiper-pagination-bullet-active {
+  background-color: #2d7a66 !important;
+  width: 26px;
+  height: 26px;
+  transform: scale(2.5);
+  transition: all 0.3s ease;
+}
+

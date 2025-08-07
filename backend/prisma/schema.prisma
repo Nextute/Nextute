@@ -33,18 +33,25 @@ model Institute {
 
 model Student {
   id              String    @id @default(uuid()) @db.Uuid
-  student_id      String    @unique @db.VarChar(10)
-  name            String    @db.Text
-  email           String    @unique @db.Text
-  password        String    @db.Text
-  gender          String    @db.Text
-  phone_number    String    @unique @map("phone_number") @db.Text
-  address         String?   @db.Text
-  course          String?   @db.Text
+  name            String
+  email           String    @unique  @db.VarChar(255)
+  password        String
+  gender          String
+  phone_number    String    @unique @map("phone_number")
+  address         String?
+  course          String?
   date_of_birth   DateTime  @map("date_of_birth")
   is_verified     Boolean   @default(false)
-  code            String?   @db.Text
-  code_expires_at DateTime?
+  code            String?
   created_at      DateTime  @default(now())
   updated_at      DateTime  @default(now()) @updatedAt
+  code_expires_at DateTime?
+  student_id      String    @unique @db.VarChar(10)
+}
+
+model Subscription {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
 }

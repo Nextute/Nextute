@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import {
   Calendar,
@@ -39,10 +40,6 @@ const BlogPage = () => {
       excerpt:
         "Exploring how technology is reshaping the educational landscape and creating new opportunities for learners worldwide.",
       content: "Complete analysis of digital transformation...",
-      author: "Dr. Rajesh Kumar",
-      authorRole: "Chief Education Officer",
-      authorImage:
-        "https://images.pexels.com/photos/2182970/pexels-photo-2182970.jpeg?auto=compress&cs=tinysrgb&w=150",
       date: "2024-01-15",
       readTime: "12 min read",
       category: "Technology",
@@ -62,10 +59,6 @@ const BlogPage = () => {
       excerpt:
         "Evidence-based methodologies and frameworks for optimizing performance in high-stakes competitive examinations.",
       content: "Strategic preparation methodologies...",
-      author: "Dr. Priya Sharma",
-      authorRole: "Director of Academic Excellence",
-      authorImage:
-        "https://images.pexels.com/photos/3785079/pexels-photo-3785079.jpeg?auto=compress&cs=tinysrgb&w=150",
       date: "2024-01-12",
       readTime: "10 min read",
       category: "Strategy",
@@ -85,10 +78,6 @@ const BlogPage = () => {
       excerpt:
         "Leveraging neuroscience and cognitive psychology to enhance learning efficiency and retention rates.",
       content: "Cognitive science in education...",
-      author: "Prof. Amit Singh",
-      authorRole: "Head of Research & Development",
-      authorImage:
-        "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150",
       date: "2024-01-10",
       readTime: "15 min read",
       category: "Research",
@@ -108,10 +97,6 @@ const BlogPage = () => {
       excerpt:
         "Comprehensive market research on emerging trends in global education sector and their implications.",
       content: "Global education market analysis...",
-      author: "Dr. Meera Gupta",
-      authorRole: "VP of Strategic Planning",
-      authorImage:
-        "https://images.pexels.com/photos/3760263/pexels-photo-3760263.jpeg?auto=compress&cs=tinysrgb&w=150",
       date: "2024-01-08",
       readTime: "18 min read",
       category: "Market Research",
@@ -131,10 +116,6 @@ const BlogPage = () => {
       excerpt:
         "Implementing advanced analytics and machine learning for personalized learning experiences at scale.",
       content: "Data-driven personalization strategies...",
-      author: "Prof. Suresh Patel",
-      authorRole: "Chief Technology Officer",
-      authorImage:
-        "https://images.pexels.com/photos/2182970/pexels-photo-2182970.jpeg?auto=compress&cs=tinysrgb&w=150",
       date: "2024-01-05",
       readTime: "14 min read",
       category: "Technology",
@@ -154,10 +135,6 @@ const BlogPage = () => {
       excerpt:
         "In-depth analysis of successful educational institutions and the leadership principles driving their success.",
       content: "Educational leadership case studies...",
-      author: "Editorial Board",
-      authorRole: "Research Team",
-      authorImage:
-        "https://images.pexels.com/photos/3785079/pexels-photo-3785079.jpeg?auto=compress&cs=tinysrgb&w=150",
       date: "2024-01-03",
       readTime: "20 min read",
       category: "Leadership",
@@ -261,11 +238,11 @@ const BlogPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/*  Header */}
+      {/* Header */}
       <Navbar />
 
       {/* Hero Section */}
-      <section className="w-full max-w-[93rem] mx-auto bg-gradient-to-r from-gray-900  via-[#1A433A] to-[#2D7A67] rounded-xl py-16 sm:py-20 lg:py-24">
+      <section className="w-full max-w-[93rem] mx-auto bg-gradient-to-r from-gray-900 via-[#1A433A] to-[#2D7A67] rounded-xl py-16 sm:py-20 lg:py-24">
         <div className="container mx-auto px-4">
           <div className="max-w-5xl mx-auto text-center text-white">
             {/* Heading */}
@@ -356,7 +333,8 @@ const BlogPage = () => {
                 </h3>
                 <div className="space-y-3">
                   {trendingPosts.slice(0, 3).map((post) => (
-                    <div
+                    <Link
+                      to={`/blog/${post.id}`}
                       key={post.id}
                       className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
                     >
@@ -374,7 +352,7 @@ const BlogPage = () => {
                           {post.views.toLocaleString()}
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </div>
@@ -465,91 +443,12 @@ const BlogPage = () => {
                     <Award className="mr-2 text-[#2D7A67]" size={24} />
                     Featured Insights
                   </h2>
-                  <button className="text-[#2D7A67] hover:text-[#1A433A] font-medium flex items-center">
+                  <Link
+                    to="/blog"
+                    className="text-[#2D7A67] hover:text-[#1A433A] font-medium flex items-center"
+                  >
                     View All <ChevronRight size={16} className="ml-1" />
-                  </button>
-                </div>
-
-                <div className="grid lg:grid-cols-2 gap-8">
-                  {featuredPosts.slice(0, 2).map((post) => (
-                    <article
-                      key={post.id}
-                      className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow group"
-                    >
-                      <div className="relative h-64 overflow-hidden">
-                        <img
-                          src={post.image}
-                          alt={post.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <div className="absolute top-4 left-4 flex gap-2">
-                          <span className="bg-[#2D7A67] text-white px-3 py-1 rounded-full text-sm font-medium">
-                            Featured
-                          </span>
-                          {post.trending && (
-                            <span className="bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                              Trending
-                            </span>
-                          )}
-                        </div>
-                        <div className="absolute top-4 right-4">
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(
-                              post.difficulty
-                            )}`}
-                          >
-                            {post.difficulty}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="p-6">
-                        <div className="flex items-center gap-3 text-sm text-gray-600 mb-3">
-                          <span className="bg-gray-100 px-2 py-1 rounded-full text-[#2D7A67] font-medium">
-                            {post.category}
-                          </span>
-                          <div className="flex items-center">
-                            <Calendar size={14} className="mr-1" />
-                            {formatDate(post.date)}
-                          </div>
-                          <div className="flex items-center">
-                            <Clock size={14} className="mr-1" />
-                            {post.readTime}
-                          </div>
-                        </div>
-
-                        <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-[#2D7A67] transition-colors cursor-pointer line-clamp-2">
-                          {post.title}
-                        </h3>
-
-                        <p className="text-gray-700 mb-4 line-clamp-2">
-                          {post.excerpt}
-                        </p>
-
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center">
-                            <img
-                              src={post.authorImage}
-                              alt={post.author}
-                              className="w-8 h-8 rounded-full mr-3"
-                            />
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">
-                                {post.author}
-                              </div>
-                              <div className="text-xs text-gray-600">
-                                {post.authorRole}
-                              </div>
-                            </div>
-                          </div>
-
-                          <button className="text-[#2D7A67] hover:text-[#1A433A] font-medium flex items-center transition-colors">
-                            Read More <ArrowRight size={16} className="ml-1" />
-                          </button>
-                        </div>
-                      </div>
-                    </article>
-                  ))}
+                  </Link>
                 </div>
               </section>
             )}
@@ -638,7 +537,7 @@ const BlogPage = () => {
                         </div>
 
                         <h3 className="text-lg font-bold text-gray-900 mb-3 group-hover:text-[#2D7A67] transition-colors cursor-pointer line-clamp-2">
-                          {post.title}
+                          <Link to={`/blog/${post.id}`}>{post.title}</Link>
                         </h3>
 
                         <p className="text-gray-700 mb-4 line-clamp-2">
@@ -656,31 +555,18 @@ const BlogPage = () => {
                           ))}
                         </div>
 
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center">
-                            <img
-                              src={post.authorImage}
-                              alt={post.author}
-                              className="w-8 h-8 rounded-full mr-3"
-                            />
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">
-                                {post.author}
-                              </div>
-                              <div className="text-xs text-gray-600">
-                                {post.authorRole}
-                              </div>
-                            </div>
-                          </div>
-
+                        <div className="flex items-center justify-end">
                           <div className="flex items-center gap-4">
                             <div className="flex items-center text-sm text-gray-600">
                               <Eye size={14} className="mr-1" />
                               {post.views.toLocaleString()}
                             </div>
-                            <button className="text-[#2D7A67] hover:text-[#1A433A] font-medium flex items-center transition-colors">
+                            <Link
+                              to={`/blog/${post.id}`}
+                              className="text-[#2D7A67] hover:text-[#1A433A] font-medium flex items-center transition-colors"
+                            >
                               Read <ArrowRight size={16} className="ml-1" />
-                            </button>
+                            </Link>
                           </div>
                         </div>
                       </div>
@@ -693,7 +579,7 @@ const BlogPage = () => {
         </div>
       </main>
 
-      {/*  Footer */}
+      {/* Footer */}
       <Footer />
     </div>
   );

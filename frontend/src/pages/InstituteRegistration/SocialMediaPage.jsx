@@ -14,14 +14,7 @@ const LOCAL_STORAGE_KEY = "socialMediaForm";
 
 const SocialMediaPage = () => {
   const navigate = useNavigate();
-  const {
-    VITE_BACKEND_BASE_URL,
-    setShowEmailVerification,
-    setUser,
-    setUserType,
-    setShowSignup,
-    setShouldFetchUser,
-  } = useContext(AppContext);
+  const { VITE_BACKEND_BASE_URL } = useContext(AppContext);
 
   const [socialMedia, setSocialMedia] = useState({
     instagram: "",
@@ -54,6 +47,7 @@ const SocialMediaPage = () => {
           response.data.data?.social_media
         ) {
           const parsedData = JSON.parse(response.data.data.social_media);
+          console.log("fetched social media data", parsedData);
 
           const socialMediaData = parsedData.socialMedia || {};
 
@@ -265,19 +259,12 @@ const SocialMediaPage = () => {
           { headers: { "Content-Type": "application/json" } }
         );
 
-        const data = await response.data;
+        //const data = await response.data;
 
         if (response.status === 200) {
           console.log("Social media submitted successfully:", response.data);
           localStorage.removeItem(LOCAL_STORAGE_KEY);
-          setUser(data.user);
-          setUserType("student");
-          setShowSignup(false);
-          setShowEmailVerification(true);
-          setShouldFetchUser(true);
 
-          localStorage.setItem("verify_email", data.user?.email);
-          localStorage.setItem("verify_user_type", "institute");
           navigate("/");
         }
       } catch (error) {

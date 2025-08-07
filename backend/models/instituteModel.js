@@ -58,6 +58,13 @@ const verifyInstitute = async (email) => {
   });
 };
 
+const updateInstituteResendVerificationCode = async (email, code, expiresAt) => {
+  return await prisma.institute.update({
+    where: {email},
+    data:  {code, code_expires_at: expiresAt},
+  })
+}
+
 const isInstituteIdUnique = async (institute_id) => {
   const institute = await prisma.institute.findUnique({
     where: { institute_id },
@@ -83,6 +90,7 @@ export {
   findInstituteByEmail,
   findInstituteByPhone,
   verifyInstitute,
+  updateInstituteResendVerificationCode,
   isInstituteIdUnique,
   findInstituteById,
   getAllInstitutes,

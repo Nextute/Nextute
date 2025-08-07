@@ -1,6 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
 import { assets } from "../assets/assets";
-import { useContext, useState, useEffect } from "react";
+import { useContext, useState, useEffect, useRef } from "react";
 import { AppContext } from "../context/AppContext";
 import toast from "react-hot-toast";
 
@@ -13,15 +14,45 @@ const Navbar = () => {
     userType,
     logout,
   } = useContext(AppContext);
+
+  // console.log("📥 user in navbar:", user);
+  // console.log("📦 User type set to navbar:", userType);
+
+  // console.log("Header render →", {
+  //   isAuthenticated,
+  //   user,
+  // });
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const location = useLocation();
 
+  const dropdownRef = useRef(null);
+  const profileButtonRef = useRef(null);
+
   useEffect(() => {
     setIsDropdownOpen(false);
     setShowMenu(false);
   }, [location]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target) &&
+        profileButtonRef.current &&
+        !profileButtonRef.current.contains(event.target)
+      ) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -38,7 +69,13 @@ const Navbar = () => {
   };
 
   return (
-    <div className="w-full max-w-[94rem] h-32 mx-auto flex items-center justify-between py-4 px-4 sm:px-8 relative">
+    <motion.nav
+      initial={{ y: -100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      className="w-full bg-[#f2fffc] bg-opacity-60 shadow-lg border-b border-gray-200 mb-5 sm:mb-10"
+    >
+    <div className="w-full max-w-[94rem] h-24 mx-auto flex items-center justify-between py-4 px-4 sm:px-8 relative">
       <NavLink to="/">
         <img
           src={assets.logo}
@@ -79,6 +116,7 @@ const Navbar = () => {
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="flex items-center justify-center w-11 h-11 rounded-full border border-gray-500 hover:bg-gray-100 transition"
               disabled={isLoggingOut}
+              ref={profileButtonRef}
             >
               {user?.profilePhoto ? (
                 <img
@@ -96,7 +134,10 @@ const Navbar = () => {
             </button>
 
             {isDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+              <div
+                ref={dropdownRef}
+                className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-lg shadow-lg z-10"
+              >
                 <NavLink
                   to={`/${userType}/dashboard`}
                   className="block px-4 py-2 text-gray-700 hover:bg-[#2D7B67] hover:text-white transition"
@@ -105,11 +146,11 @@ const Navbar = () => {
                   Dashboard
                 </NavLink>
                 <NavLink
-                  to={`/${userType}/settings`}
+                  to={`/support`}
                   className="block px-4 py-2 text-gray-700 hover:bg-[#2D7B67] hover:text-white transition"
                   onClick={() => setIsDropdownOpen(false)}
                 >
-                  Settings
+                  Support
                 </NavLink>
                 <button
                   className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-[#2D7B67] hover:text-white transition"
@@ -191,9 +232,9 @@ const Navbar = () => {
               </NavLink>
               <NavLink
                 onClick={() => setShowMenu(false)}
-                to={`/${userType}/settings`}
+                to={`/support`}
               >
-                <p className="py-2">Settings</p>
+                <p className="py-2">Support</p>
               </NavLink>
               <button
                 className="text-left py-2 text-gray-700"
@@ -233,6 +274,7 @@ const Navbar = () => {
         </div>
       </div>
     </div>
+    </motion.nav>
   );
 };
 

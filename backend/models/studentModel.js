@@ -38,6 +38,13 @@ const verifyStudent = async (email) => {
   });
 };
 
+const updateStudentResendVerificationCode = async (email, code, expiresAt) => {
+  return await prisma.student.update({
+    where: {email},
+    data:  {code, code_expires_at: expiresAt},
+  })
+}
+
 const findStudentById = async (student_id) => {
   return await prisma.student.findUnique({
     where: { student_id },
@@ -54,6 +61,7 @@ export {
   findStudentByEmail,
   findStudentByPhone,
   verifyStudent,
+  updateStudentResendVerificationCode,
   isStudentIdUnique,
   findStudentById,
 };
