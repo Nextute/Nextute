@@ -8,6 +8,7 @@ import { AppContext } from "../../context/AppContext";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import PhoneNumberValidator from "../../context/PhoneNumberValidator.jsx";
+import LoadingSpinner from "../LoadingSpinner.jsx";
 
 const sanitizeInput = (input) => input.replace(/[<>]/g, "");
 
@@ -55,7 +56,6 @@ const validateInput = (input, defaultCountry = "IN") => {
   }
 };
 
-
 const InstituteLogin = () => {
   const [loginInput, setLoginInput] = useState("");
   const [password, setPassword] = useState("");
@@ -94,7 +94,6 @@ const InstituteLogin = () => {
       };
     }
   };
-
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -136,7 +135,6 @@ const InstituteLogin = () => {
 
     const validation = validateInput(sanitizedLoginInput);
     if (!validation.isValid) {
-
       setErrors((prev) => ({
         ...prev,
         loginInput: validation.error,
@@ -157,19 +155,15 @@ const InstituteLogin = () => {
     if (validation.type === "email") {
       payload.email = sanitizedLoginInput;
     } else {
-
       payload.phone = validation.value;
-
     }
 
     setLoading(true);
     try {
-
       const response = await axios.post(
         `${VITE_BACKEND_BASE_URL}/api/institutes/auth/login`,
         payload,
         {
-
           withCredentials: true,
           headers: { "Content-Type": "application/json" },
         }
@@ -192,53 +186,32 @@ const InstituteLogin = () => {
         }
 
         // Store user data in sessionStorage
-        sessionStorage.setItem("user", JSON.stringify(response.data.user));
-        sessionStorage.setItem("userType", "institute");
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+        localStorage.setItem("userType", "institute");
         sessionStorage.removeItem("verify_email");
         sessionStorage.removeItem("verify_user_type");
-
-        navigate("/");
-        
-//           method: "POST",
-//           headers: { "Content-Type": "application/json" },
-//           credentials: "include",
-//           body: JSON.stringify(payload),
-//         }
-//       );
-
-//       const data = await response.json();
-
-//       if (!response.ok) {
-//         throw new Error(data.message || "Login failed.");
-
       }
 
-      toast.success("Login successful!");
-      setUser(data.user);
-      setUserType("institute");
-      setShouldFetchUser(true);
-      setShowLogin(false);
-      resetForm();
       navigate("/");
     } catch (error) {
-
       const message =
         error.response?.status === 401
           ? "Invalid credentials."
           : error.response?.data?.message || "Login failed. Please try again.";
       toast.error(message);
-
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#f2fffc]">
       <img
         src={assets.logo || "/fallback-logo.png"}
         alt="Company Logo"
-        className="w-32 sm:w-40 flex justify-start ml-20"
+        className="w-32 sm:w-40 flex justify-start ml-20 cursor-pointer"
+        onClick={() => navigate("/")}
+        aria-label="Navigate to Home"
       />
 
       <div className="flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 -mt-4">
@@ -258,7 +231,6 @@ const InstituteLogin = () => {
           </div>
 
           <h1 className="text-3xl sm:text-4lg lg:text-5xl text-[#204B55] font-semibold mb-8">
-
             Institute Login
           </h1>
 
@@ -370,14 +342,7 @@ const InstituteLogin = () => {
               disabled={loading}
               aria-label="Sign In"
             >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Logging in...
-                </span>
-              ) : (
-                "Sign In"
-              )}
+              {loading ? <LoadingSpinner /> : "Sign In"}
             </button>
 
             <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">

@@ -1,12 +1,12 @@
 import logo from "./logo.svg";
 import filter from "./filter.svg";
 import Indore from "./Indore.png";
-import Bhubaneswar from "./Bhubaneswar.png";
+import Bhuvneshwar from "./Bhuvneshwar.png";
 import Patna from "./Patna.png";
 import Delhi from "./Delhi.png";
 import Mumbai from "./Mumbai.png";
 import Hyderabad from "./Hyderabad.png";
-import More from "./More.png";
+import More from "./more.png";
 import coaching from "./coaching.png";
 import test1 from "./testimonial1.jpg"
 import google from "./google.svg";
@@ -53,6 +53,7 @@ import aboutus from "./aboutus.jpg";
 import Revolution from "./Revolution.jpeg";
 import ReviewBanner from "./ReviewBanner.svg";
 import FAQBanner from "./FAQBanner.svg"
+import Not_found from "./No_found.svg";
 
 export const assets = {
     logo,
@@ -103,14 +104,15 @@ export const assets = {
     Revolution,
     ReviewBanner,
     FAQBanner,
+    Not_found,
 };
 
 export const cities = [
   { id: 1, src: Indore, alt: "Indore City Image", name: "Indore" },
-  { id: 2, src: Bhubaneswar, alt: "Bhubaneswar City Image", name: "Bhubaneswar" },
+  { id: 2, src: Bhuvneshwar, alt: "Bhuvneshwar City Image", name: "Bhuvneshwar" },
   { id: 3, src: Patna, alt: "Patna City Image", name: "Patna" },
   { id: 4, src: Delhi, alt: "Delhi City Image", name: "Delhi" },
   { id: 5, src: Mumbai, alt: "Mumbai City Image", name: "Mumbai" },
   { id: 6, src: Hyderabad, alt: "Hyderabad City Image", name: "Hyderabad" },
-  { id: 7, src: More, alt: "More Cities Image", name: "More" },
+  { id: 7, src: More, alt: "More Cities Image"  },
 ];

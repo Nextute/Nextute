@@ -18,13 +18,41 @@ const AppContextProvider = ({ children }) => {
 
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showEmailVerification, setShowEmailVerification] = useState(false);
   const [loading, setLoading] = useState(false);
   const [shouldFetchUser, setShouldFetchUser] = useState(true);
-  const [institutes, setInstitutes] = useState([]);
   const [institutesLoaded, setInstitutesLoaded] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
+  const [institutes, setInstitutes] = useState(() => {
+    try {
+      const cached = localStorage.getItem("cachedInstitutes");
+      const expiry = localStorage.getItem("cachedInstitutesExpiry");
 
+      const isExpired = expiry && Date.now() > parseInt(expiry);
+
+      if (cached && !isExpired) {
+        const parsed = JSON.parse(cached);
+        return Array.isArray(parsed) ? parsed : [];
+      } else {
+        // Clear expired or invalid cache
+        localStorage.removeItem("cachedInstitutes");
+        localStorage.removeItem("cachedInstitutesExpiry");
+        return [];
+      }
+    } catch (e) {
+      console.error("Error loading cached institutes:", e);
+      return [];
+    }
+  });
+  const [isEditing, setIsEditing] = useState(false);
+  const [profile, setProfile] = useState({});
+
+  useEffect(() => {
+    if (institutes && institutes.length > 0) {
+      localStorage.setItem("cachedInstitutes", JSON.stringify(institutes));
+    }
+  }, [institutes]);
 
   // Helper to get token from cookies
   const getToken = () => {
@@ -73,6 +101,8 @@ const AppContextProvider = ({ children }) => {
           );
           setUser(response.data.data);
           setUserType("student");
+          console.log("📥 Fetched user:", response.data.data);
+          console.log("📦 User type set to:", userType);
           localStorage.setItem("userType", "student");
         } catch (studentError) {
           if (studentError.name === "CanceledError") return;
@@ -85,13 +115,14 @@ const AppContextProvider = ({ children }) => {
             }
           );
           setUser(response.data.data);
+          console.log("📥 Fetched user:", response.data.data);
+          console.log("📦 User type set to:", userType);
           setUserType("institute");
           localStorage.setItem("userType", "institute");
         }
 
         localStorage.setItem("user", JSON.stringify(response.data.data));
         localStorage.setItem("authToken", token);
-
       } catch (error) {
         if (error.name !== "CanceledError") {
           console.error("Fetch user error:", error.message);
@@ -104,7 +135,6 @@ const AppContextProvider = ({ children }) => {
       } finally {
         setLoading(false);
         setShouldFetchUser(false);
-
       }
     },
     [shouldFetchUser, VITE_BACKEND_BASE_URL]
@@ -123,7 +153,7 @@ const AppContextProvider = ({ children }) => {
     const token = getToken();
 
     if (!token) {
-      console.log("Token not set yet");
+      // console.log("Token not set yet");
       return;
     }
 
@@ -136,7 +166,7 @@ const AppContextProvider = ({ children }) => {
       clearTimeout(timer);
       abortController.abort();
     };
-  }, [fetchUser]); 
+  }, [fetchUser]);
 
   // Logout function
   const logout = useCallback(async () => {
@@ -160,6 +190,8 @@ const AppContextProvider = ({ children }) => {
       setShowSignup(false);
       setShowEmailVerification(false);
       setShouldFetchUser(true);
+      setIsEditing(false);
+      setProfile({});
 
       // Clear storage
       localStorage.removeItem("user");
@@ -214,7 +246,13 @@ const AppContextProvider = ({ children }) => {
     institutesLoaded,
     setInstitutesLoaded,
     userLocation,
-    setUserLocation, 
+    setUserLocation,
+    isEditing,
+    setIsEditing,
+    profile,
+    setProfile,
+    showForgotPassword,
+    setShowForgotPassword,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -45,7 +45,7 @@ const Header = () => {
     if (isLast) {
       navigate("/institutes-on-location");
     } else {
-      navigate(`/search?city=${encodeURIComponent(cityName)}`);
+      navigate(`/institutes-on-location?city=${encodeURIComponent(cityName)}`);
     }
   };
 
@@ -59,14 +59,21 @@ const Header = () => {
       {/* Heading and Subheading */}
       <div className="flex flex-col text-center">
         <motion.h2
-          className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-[#002639]"
+          className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-[#002639] flex flex-col sm:flex-row items-center justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.2 }}
         >
-          Search Across <span className="text-[#204B55]">"{text}"</span>
-          <span className="text-[#204B55] animate-blink">|</span>
+          Search Across{" "}
+          <span className="relative inline-block text-[#204B55] ml-2">
+            <span className="invisible">"1000+ Courses"</span>
+            <span className="absolute left-0 top-0 whitespace-nowrap">
+              "{text}"
+            </span>
+          </span>
+          <span className="text-[#204B55] animate-blink"></span>
         </motion.h2>
+
         <motion.p
           className="text-base sm:text-lg md:text-xl text-[#002639] font-normal mt-4 mx-auto max-w-3xl"
           initial={{ opacity: 0 }}
@@ -81,7 +88,7 @@ const Header = () => {
       <SearchBar />
 
       {/* Cities Images */}
-      <div className="flex flex-row items-center gap-4 sm:gap-6 mt-8 sm:mt-12 overflow-x-auto scrollbar-hide px-4 w-full max-w-5xl mx-auto">
+      <div className="flex flex-row items-center gap-4 sm:gap-6 mt-8 sm:mt-12 overflow-x-auto scrollbar-hide px-4 w-full h-[30vh] max-w-5xl mx-auto">
         {cities.map((city, index) => {
           const isLast = index === cities.length - 1;
           return (
@@ -127,9 +134,12 @@ const Header = () => {
 
               {/* More Text Overlay for last image */}
               {isLast && (
-                <span className="absolute inset-0 flex items-center justify-center underline text-black font-semibold text-xs sm:text-sm md:text-base">
+                <button
+                  className="absolute inset-0 flex items-center justify-center underline text-black font-semibold text-xs sm:text-sm md:text-base"
+                  onClick={() => navigate("/institutes-on-location")}
+                >
                   More...
-                </span>
+                </button>
               )}
             </motion.div>
           );

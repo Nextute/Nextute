@@ -259,18 +259,6 @@ const StudentSignup = () => {
         throw new Error("Unexpected response status: " + response.status);
       }
 
-//       toast.success("Registration successful! Please verify your email.");
-//       setUser(data.user);
-//       setUserType("student");
-//       setShowSignup(false);
-//       setShowEmailVerification(true);
-//       setShouldFetchUser(true);
-//       resetForm();
-//       localStorage.setItem("verify_email", data.user.email);
-//       localStorage.setItem("verify_user_type", "student");
-
-//       navigate("/verify");
-
     } catch (error) {
       console.error("❌ Signup error details:", {
         message: error.message,
@@ -297,12 +285,13 @@ const StudentSignup = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-gray-50 flex flex-col overflow-hidden lg:flex-row">
+    <div className="relative min-h-screen bg-[#f2fffc] flex flex-col overflow-hidden lg:flex-row">
       <div className="px-4 sm:px-6 lg:px-10 z-30">
         <img
           src={assets.logo || "/fallback-logo.png"}
           alt="Logo"
-          className="w-24 sm:w-28 md:w-32 lg:w-36 absolute top-0 lg:-top-4 left-4 sm:left-6 lg:left-8"
+          className="w-24 sm:w-28 md:w-32 lg:w-36 absolute cursor-pointer top-0 lg:-top-4 left-4 sm:left-6 lg:left-8"
+          onClick={() => navigate("/")}
         />
       </div>
 

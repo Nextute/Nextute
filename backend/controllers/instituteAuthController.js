@@ -9,9 +9,13 @@ import {
   verifyInstitute,
   findInstituteById,
   getAllInstitutes,
+  updateInstituteResendVerificationCode,
 } from "../models/instituteModel.js";
 import { handleError } from "../utils/errorHandler.js";
 import { body, param, validationResult } from "express-validator";
+import { validate as isUUID } from "uuid";
+import prisma from "../db/index.js";
+import sendUpdateEmail from "../utils/sendUpdateEmail.js";
 
 // Signup a new institute
 export const signup = [
@@ -68,6 +72,22 @@ export const signup = [
       const token = createSecretToken(institute.id, "institute");
       console.log("Signup - Insitute:", institute, "Token:", token); // Debug
 
+      // Check institute count and send update emails if threshold reached
+      try {
+        const instituteCount = await prisma.Institute.count();
+        const THRESHOLD = 100;
+        const isMilestoneReached = instituteCount % THRESHOLD === 0;
+
+        if (isMilestoneReached) {
+          const subscribers = await prisma.Subscription.findMany();
+          await Promise.all(
+            subscribers.map((subscriber) => sendUpdateEmail(subscriber.email))
+          );
+        }
+      } catch (error) {
+        console.error("Error sending update email:", error);
+      }
+
       res.cookie("authToken", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -122,6 +142,10 @@ export const verifyCode = [
       const institute = await findInstituteByEmail(email);
       const now = new Date();
 
+      console.log("User entered code:", code);
+      console.log("DB stored code:", institute.code);
+      console.log("Code expires at:", institute.code_expires_at);
+
       if (
         !institute ||
         institute.code !== code ||
@@ -166,63 +190,68 @@ export const verifyCode = [
   },
 ];
 
-// Resend verification code to the institute's email
+// Resend verification code to the student's email
 export const resendVerificationCode = [
   body("email").isEmail().normalizeEmail().withMessage("Invalid email format"),
+
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.log("DEBUG: Resend validation error:", errors.array());
       return handleError(res, 400, errors.array()[0].msg, "VALIDATION_ERROR");
     }
 
-    try {
-      const { email } = req.body;
-      console.log("DEBUG: Resending verification code for:", email);
+    const { email } = req.body;
 
+    try {
       const institute = await findInstituteByEmail(email);
+
       if (!institute) {
-        console.log("DEBUG: Institute not found for email:", email);
-        return handleError(
-          res,
-          404,
-          "Institute not found",
-          "INSTITUTE_NOT_FOUND"
-        );
+        return handleError(res, 404, "Email not found", "EMAIL_NOT_FOUND");
       }
 
       if (institute.is_verified) {
-        console.log("DEBUG: Email already verified for:", email);
         return handleError(
           res,
           400,
-          "Email already verified",
+          "Email is already verified",
           "ALREADY_VERIFIED"
         );
       }
 
       const code = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // valid for 10 mins
 
-      await updateInstituteSection(institute.id, "code", code);
-      await updateInstituteSection(institute.id, "code_expires_at", expiresAt);
+      console.log(`[DEBUG] Resent OTP code for ${email}: ${code}`);
 
-      console.log("DEBUG: Generated new code:", code, "Expires at:", expiresAt);
+      institute.code = code;
+      institute.code_expires_at = expiresAt;
+
+      // Update code in DB
+      await updateInstituteResendVerificationCode(email, code, expiresAt);
 
       try {
         await sendVerificationEmail(email, code);
-        console.log("DEBUG: Verification email sent to:", email);
         return res.status(200).json({
           status: true,
-          message: "Verification code resent",
+          message: "Verification code resent successfully",
         });
       } catch (emailErr) {
-        console.error("DEBUG: Email sending error:", emailErr);
-        return handleError(res, 500, "Failed to send email", "EMAIL_ERROR");
+        console.error("Email sending failed:", emailErr);
+        return handleError(
+          res,
+          500,
+          "Failed to send email. Try again later.",
+          "EMAIL_SEND_FAILED"
+        );
       }
     } catch (err) {
-      console.error("DEBUG: Resend error:", err);
-      return handleError(res, 500, "Server error", "RESEND_ERROR");
+      console.error("Resend verification error:", err);
+      return handleError(
+        res,
+        500,
+        "Server error during resend verification",
+        "RESEND_ERROR"
+      );
     }
   },
 ];
@@ -340,7 +369,6 @@ export const updateProfileSection = [
     if (section === "basic-info") {
       if (!value.institute_name) {
         throw new Error("Institute name is required");
-
       }
     }
 
@@ -496,7 +524,6 @@ export const getAllInstitutesData = async (req, res) => {
   }
 };
 
-
 // Fetch institute by ID
 export const getInstituteById = async (req, res) => {
   try {
@@ -504,8 +531,13 @@ export const getInstituteById = async (req, res) => {
     console.log("Fetching institute by ID:", id);
 
     // Validate ID format
-    if (!id) {
-      return handleError(res, 400, "Invalid institute ID", "INVALID_ID");
+    if (!id || !isUUID(id)) {
+      return handleError(
+        res,
+        400,
+        "Invalid institute ID format",
+        "INVALID_UUID"
+      );
     }
 
     const institute = await findInstituteById(id);
@@ -526,4 +558,3 @@ export const getInstituteById = async (req, res) => {
     return handleError(res, 500, "Internal server error", "INSTITUTE_ERROR");
   }
 };
-

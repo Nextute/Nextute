@@ -8,6 +8,7 @@ import { AppContext } from "../../context/AppContext";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import PhoneNumberValidator from "../../context/PhoneNumberValidator.jsx";
+import LoadingSpinner from "../LoadingSpinner.jsx";
 
 const sanitizeInput = (input) => input.replace(/[<>]/g, "");
 
@@ -191,11 +192,13 @@ const StudentLogin = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#f2fffc]">
       <img
         src={assets.logo || "/fallback-logo.png"}
         alt="Company Logo"
-        className="w-32 sm:w-40 flex justify-start ml-20"
+        className="w-32 sm:w-40 flex justify-start ml-20 cursor-pointer"
+        onClick={() => navigate("/")}
+        aria-label="Navigate to Home"
       />
 
       <div className="flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 -mt-4">
@@ -326,10 +329,7 @@ const StudentLogin = () => {
               aria-label="Sign In"
             >
               {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Logging in...
-                </span>
+                <LoadingSpinner />
               ) : (
                 "Sign In"
               )}

@@ -59,7 +59,6 @@ const FacultiesPage = () => {
           `${VITE_BACKEND_BASE_URL}/api/institutes/profile`
         );
         console.log("Fetched profile data:", response.data);
-        
 
         if (response.status === 200 && response.data.data?.faculty_details) {
           let savedData = response.data.data.faculty_details;
@@ -317,7 +316,7 @@ const FacultiesPage = () => {
   );
 
   //handle edit
-   const handleEditClick = useCallback(() => {
+  const handleEditClick = useCallback(() => {
     setIsEditing(true);
   }, []);
 

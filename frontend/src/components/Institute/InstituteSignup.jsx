@@ -143,41 +143,6 @@ const InstituteSignup = () => {
       setErrors((prev) => ({ ...prev, contact: phoneValidation.error }));
       toast.error(phoneValidation.error);
       return;
-
-//       confirmPassword: validateField(
-//         "confirmPassword",
-//         confirmPassword,
-//         password
-//       ),
-//     };
-
-//     console.log("DEBUG: Validation errors:", newErrors);
-
-//     if (Object.values(newErrors).some((error) => error)) {
-//       setErrors(newErrors);
-//       toast.error("Please fix the errors in the form.");
-//       console.log("DEBUG: Form validation failed");
-//       return;
-//     }
-
-//     if (password !== confirmPassword) {
-//       setErrors((prev) => ({
-//         ...prev,
-//         confirmPassword: "Passwords do not match.",
-//       }));
-//       console.log("DEBUG: Passwords do not match");
-//       return;
-//     }
-
-//     if (contact) {
-//       const phoneValidation = PhoneNumberValidator(contact);
-//       console.log("DEBUG: Phone validation:", phoneValidation);
-//       if (!phoneValidation.isValid) {
-//         setErrors((prev) => ({ ...prev, contact: phoneValidation.error }));
-//         console.log("DEBUG: Phone validation failed");
-//         return;
-//       }
-
     }
 
     setLoading(true);
@@ -198,6 +163,15 @@ const InstituteSignup = () => {
       );
 
       if (response.status === 201) {
+
+        console.log("✅ Insitute signup successful:", {
+          userId: response.data.user?.id,
+          email: response.data.user?.email,
+          name: response.data.user?.instituteName,
+          token: response.data.token,
+          timestamp: new Date().toISOString()
+        });
+
         toast.success("Registration successful! Please verify your email.");
         setUser(response.data.user || {});
         setUserType("institute");
@@ -215,10 +189,11 @@ const InstituteSignup = () => {
         // Store verification data
         sessionStorage.setItem("verify_email", email);
         sessionStorage.setItem("verify_user_type", "institute");
-        sessionStorage.setItem("user", JSON.stringify(response.data.user));
-        sessionStorage.setItem("userType", "institute");
+        localStorage.setItem("authToken", response.data.token);
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+        localStorage.setItem("userType", "institute");
 
-        navigate("/verify");
+        navigate("/verify", {replace: true});
       }
     } catch (error) {
       const message =
@@ -226,42 +201,7 @@ const InstituteSignup = () => {
           ? "Email already registered."
           : error.response?.data?.message || "Something went wrong.";
       toast.error(message);
-
-//         {
-//           headers: {
-//             "Content-Type": "application/json",
-//           },
-//           withCredentials: true, // Send cookies
-//         }
-//       );
-
-//       console.log("DEBUG: Signup response:", response.data);
-
-//       if (response.status === 201) {
-//         const userData = response.data?.user || {}; // get user if backend sends it
-//         toast.success("Registration successful! Please verify your email.");
-
-//         // Context updates for navbar
-//         setUser(userData);
-//         setUserType("institute");
-//         setShouldFetchUser(true);
-//         setShowSignup(false);
-//         setShowEmailVerification(true);
-//         localStorage.setItem("verify_email", data.user.email);
-//         localStorage.setItem("verify_user_type", "institute");
-
-//         navigate("/verify", { state: { email, userType: "institute" } });
-//       } else {
-//         console.error("DEBUG: Signup failed:", response.data.message);
-//         toast.error(response.data.message || "Registration failed.");
-//       }
-//     } catch (error) {
-//       console.error("DEBUG: Signup error:", error.response?.data || error);
-//       toast.error(
-//         error.response?.data?.message ||
-//           "Something went wrong. Please try again later."
-//       );
-
+    
     } finally {
       setLoading(false);
       console.log("DEBUG: Signup request completed");
@@ -269,12 +209,13 @@ const InstituteSignup = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col overflow-hidden lg:flex-row">
+    <div className="relative min-h-screen bg-[#f2fffc] flex flex-col overflow-hidden lg:flex-row">
       <div className="px-4 sm:px-6 lg:px-10 z-30">
         <img
           src={assets.logo || "/fallback-logo.png"}
           alt="Logo"
-          className="w-24 sm:w-28 md:w-32 lg:w-36 absolute top-0 lg:-top-4 left-4 sm:left-6 lg:left-8"
+          className="w-24 sm:w-28 md:w-32 lg:w-36 cursor-pointer absolute top-0 lg:-top-4 left-4 sm:left-6 lg:left-8"
+          onClick={() => navigate("/")}
         />
       </div>
 
@@ -632,7 +573,7 @@ const InstituteSignup = () => {
             </svg>
             <img
               src={
-                assets.institute_illustration || "/institute-illustration.png"
+                assets.institue_illustration || "/institute-illustration.png"
               }
               alt="Institute signup illustration"
               className="relative w-full h-auto max-h-[70vh] object-contain z-50"

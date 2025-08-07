@@ -76,7 +76,7 @@ const Testimonial = () => {
   ];
 
   return (
-    <div className="px-0 md:px-8 py-16 pb-10 md:pb-32 my-20 text-center relative overflow-visible">
+    <div className="px-0 md:px-8 py-16 pb-10 my-20 text-center relative overflow-visible">
       <h1 className="text-4xl sm:text-5xl font-bold text-[#002639] mb-2">
         “Voices of Success”
       </h1>

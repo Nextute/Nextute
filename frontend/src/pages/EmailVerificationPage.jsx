@@ -20,6 +20,7 @@ const EmailVerificationPage = () => {
   const [isResendDisabled, setIsResendDisabled] = useState(false);
   const [countdown, setCountdown] = useState(60);
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
   const [error, setError] = useState("");
   const inputRefs = useRef([]);
   const navigate = useNavigate();
@@ -32,17 +33,9 @@ const EmailVerificationPage = () => {
     if (user?.emailVerified) {
       toast.success("Email already verified!");
       setShowEmailVerification(false);
-      navigate(`/${effectiveUserType}/dashboard`, { replace: true });
+      navigate("/", { replace: true });
     }
   }, [user, navigate, effectiveUserType]);
-
-  useEffect(() => {
-    if (!email) {
-      toast.error("No email found. Please sign up again.");
-      navigate(`/${effectiveUserType}/signup`, { replace: true });
-    }
-    inputRefs.current[0]?.focus();
-  }, [email, effectiveUserType, navigate]);
 
   useEffect(() => {
     let timer;
@@ -62,9 +55,6 @@ const EmailVerificationPage = () => {
     newCode[index] = value.slice(0, 1);
     setCode(newCode);
     if (value && index < 5) inputRefs.current[index + 1].focus();
-    if (newCode.every((digit) => digit !== "")) {
-      handleSubmit(null, newCode.join(""));
-    }
   };
 
   const handleKeyDown = (index, e) => {
@@ -75,38 +65,27 @@ const EmailVerificationPage = () => {
 
   const handlePaste = (e) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    const pastedData = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, 6);
     const newCode = [...code];
     for (let i = 0; i < Math.min(pastedData.length, 6); i++) {
       newCode[i] = pastedData[i] || "";
     }
     setCode(newCode);
     inputRefs.current[Math.min(pastedData.length, 5)].focus();
-    if (pastedData.length === 6) {
-      handleSubmit(null, newCode.join(""));
-    }
   };
 
-  const handleSubmit = async (e, manualCode) => {
+  const handleSubmit = async (e) => {
     if (e) e.preventDefault();
-    const verificationCode = manualCode || code.join("");
-    
-    if (verificationCode.length !== 6 || !/^\d{6}$/.test(verificationCode)) {
-      setError("Please enter a valid 6-digit code.");
-      toast.error("Invalid verification code.");
-      return;
-    }
-
-    if (!email) {
-      toast.error("No email found. Please sign up again.");
-      navigate(`/${effectiveUserType}/signup`, { replace: true });
-      return;
-    }
+    const verificationCode = code.join("");
 
     setLoading(true);
     setError("");
     try {
-      const routePrefix = effectiveUserType === "student" ? "students" : "institutes";
+      const routePrefix =
+        effectiveUserType === "student" ? "students" : "institutes";
       const response = await axios.post(
         `${VITE_BACKEND_BASE_URL}/api/${routePrefix}/verify`,
         { email, code: verificationCode },
@@ -119,14 +98,17 @@ const EmailVerificationPage = () => {
         setUser(response.data.user || {});
         setUserType(effectiveUserType);
         setShouldFetchUser(true);
-        sessionStorage.setItem("user", JSON.stringify(response.data.user || {}));
+        sessionStorage.setItem(
+          "user",
+          JSON.stringify(response.data.user || {})
+        );
         sessionStorage.setItem("userType", effectiveUserType);
         sessionStorage.removeItem("verify_email");
         sessionStorage.removeItem("verify_user_type");
 
         setTimeout(() => {
           navigate(
-            effectiveUserType === "student" ? "/student/dashboard" : "/institute/basic-info",
+            effectiveUserType === "student" ? "/" : "/institute/basic-info",
             { replace: true }
           );
         }, 1000);
@@ -137,7 +119,8 @@ const EmailVerificationPage = () => {
       const message =
         error.response?.status === 400
           ? "Invalid or expired verification code."
-          : error.response?.data?.message || "Verification failed. Please try again.";
+          : error.response?.data?.message ||
+            "Verification failed. Please try again.";
       setError(message);
       toast.error(message);
     } finally {
@@ -146,18 +129,21 @@ const EmailVerificationPage = () => {
   };
 
   const handleResendCode = async () => {
-    if (isResendDisabled || !email) {
-      if (!email) {
-        toast.error("No email found. Please sign up again.");
-        navigate(`/${effectiveUserType}/signup`, { replace: true });
-      }
+    if (!email) {
+      toast.error("Email is missing. Please sign up again.");
+      navigate(`/${effectiveUserType}/signup`, { replace: true });
       return;
     }
 
-    setLoading(true);
-    setError("");
+    if (isResendDisabled || !email) return;
+
     try {
-      const routePrefix = effectiveUserType === "student" ? "students" : "institutes";
+      setResendLoading(true);
+      setError("");
+
+      const routePrefix =
+        effectiveUserType === "student" ? "students" : "institutes";
+
       const response = await axios.post(
         `${VITE_BACKEND_BASE_URL}/api/${routePrefix}/resend-verification`,
         { email },
@@ -166,12 +152,15 @@ const EmailVerificationPage = () => {
 
       if (response.status === 200) {
         toast.success("Verification code resent successfully!");
+
+        // Reset code input, restart timer
         setIsResendDisabled(true);
-        setCountdown(60);
+        setCountdown(90);
         setCode(["", "", "", "", "", ""]);
         inputRefs.current[0]?.focus();
       } else {
-        throw new Error("Unexpected response status: " + response.status);
+        // This shouldn't happen but handled anyway
+        throw new Error(`Unexpected response status: ${response.status}`);
       }
     } catch (error) {
       const message =
@@ -179,14 +168,18 @@ const EmailVerificationPage = () => {
       setError(message);
       toast.error(message);
     } finally {
-      setLoading(false);
+      setResendLoading(false);
     }
   };
 
   return (
     <div className="relative min-h-screen bg-gray-50 flex items-center justify-center p-4 sm:p-6">
       <div className="absolute top-4 left-4 sm:top-6 sm:left-6">
-        <img src={assets.logo || "/fallback-logo.png"} alt="Logo" className="w-24 sm:w-28 md:w-32" />
+        <img
+          src={assets.logo || "/fallback-logo.png"}
+          alt="Logo"
+          className="w-24 sm:w-28 md:w-32"
+        />
       </div>
 
       <div className="w-full max-w-md sm:max-w-lg bg-white rounded-2xl shadow-lg p-6 sm:p-8">
@@ -194,7 +187,9 @@ const EmailVerificationPage = () => {
           Email Verification
         </h2>
         <p className="text-center text-gray-600 mb-6">
-          We’ve sent a 6-digit code to <span className="font-semibold">{email || "your email"}</span>. Please enter it below.
+          We’ve sent a 6-digit code to{" "}
+          <span className="font-semibold">{email || "your email"}</span>. Please
+          enter it below.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -241,15 +236,21 @@ const EmailVerificationPage = () => {
 
         <div className="mt-6 text-center">
           <p className="text-gray-600">
-            Didn’t receive the code? {" "}
+            Didn’t receive the code?{" "}
             <button
               onClick={handleResendCode}
               className={`text-teal-600 font-semibold hover:underline ${
-                isResendDisabled || loading || !email ? "opacity-50 cursor-not-allowed" : ""
+                isResendDisabled || resendLoading || !email
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
               }`}
-              disabled={isResendDisabled || loading || !email}
+              disabled={isResendDisabled || resendLoading || !email}
             >
-              {isResendDisabled ? `Resend in ${countdown}s` : "Resend Code"}
+              {resendLoading
+                ? "Sending..."
+                : isResendDisabled
+                ? `Resend in ${countdown}s`
+                : "Resend Code"}
             </button>
           </p>
           <button

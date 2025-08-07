@@ -16,6 +16,8 @@ import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
 import TestimonialCard from "../components/TestimonialCard";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 const StudentServicesPage = ({ onBack }) => {
   const [billingCycle, setBillingCycle] = useState("monthly");
@@ -148,60 +150,7 @@ const StudentServicesPage = ({ onBack }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F9FBF9] to-[#E6EEE3]">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md shadow-sm border-b border-[#E6EEE3] sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={onBack}
-                className="flex items-center space-x-2 text-gray-600 hover:text-[#2D7A67] transition-colors font-medium"
-              >
-                <ArrowLeft size={20} />
-                <span>Back to Home</span>
-              </button>
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-[#2D7A67] to-[#1A433A] rounded-xl flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">N</span>
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-[#1A433A]">
-                    Student Pricing Plans
-                  </h1>
-                  <p className="text-sm text-gray-600">
-                    Choose Your Perfect Plan
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="hidden md:flex items-center space-x-6">
-              <button
-                onClick={onBack}
-                className="text-gray-700 hover:text-[#2D7A67] font-medium transition-colors"
-              >
-                Home
-              </button>
-              <a
-                href="#"
-                className="text-[#2D7A67] font-semibold border-b-2 border-[#2D7A67] pb-1"
-              >
-                Services
-              </a>
-              <a
-                href="#"
-                className="text-gray-700 hover:text-[#2D7A67] font-medium transition-colors"
-              >
-                About
-              </a>
-              <a
-                href="#"
-                className="text-gray-700 hover:text-[#2D7A67] font-medium transition-colors"
-              >
-                Contact
-              </a>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       {/* Pricing Hero */}
       <section className="py-20 text-center relative overflow-hidden">
@@ -471,106 +420,7 @@ const StudentServicesPage = ({ onBack }) => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-white text-[#1A433A] py-16">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="md:col-span-2">
-              <div className="flex items-center space-x-3 mb-6">
-                <div className="w-12 h-12 bg-[#E6EEE3] rounded-xl flex items-center justify-center">
-                  <span className="text-[#1A433A] font-bold text-xl">N</span>
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold">NEXTUTE</h3>
-                  <p className="text-gray-700 text-sm">
-                    Empowering Educational Excellence
-                  </p>
-                </div>
-              </div>
-              <p className="text-gray-800 mb-4 leading-relaxed max-w-md">
-                Bridging the gap between students and quality education through
-                innovative technology and personalized solutions.
-              </p>
-            </div>
-            <div>
-              <h4 className="text-lg font-bold mb-6">Our Services</h4>
-              <ul className="space-y-3">
-                <li>
-                  <a
-                    href="#"
-                    className="text-gray-700 hover:text-[#2D7A67] transition-colors"
-                  >
-                    Student Services
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-gray-700 hover:text-[#2D7A67] transition-colors"
-                  >
-                    Institute Solutions
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-gray-700 hover:text-[#2D7A67] transition-colors"
-                  >
-                    Test Analytics
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-gray-700 hover:text-[#2D7A67] transition-colors"
-                  >
-                    Expert Mentorship
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-lg font-bold mb-6">Get in Touch</h4>
-              <ul className="space-y-3">
-                <li>
-                  <a
-                    href="#"
-                    className="text-gray-700 hover:text-[#2D7A67] transition-colors"
-                  >
-                    Contact Us
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-gray-700 hover:text-[#2D7A67] transition-colors"
-                  >
-                    Support
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-gray-700 hover:text-[#2D7A67] transition-colors"
-                  >
-                    Partnership
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-gray-700 hover:text-[#2D7A67] transition-colors"
-                  >
-                    Careers
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-300 mt-12 pt-8 text-center text-gray-600">
-            <p>© 2024 Nextute EdTech Pvt. Ltd. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

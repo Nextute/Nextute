@@ -34,7 +34,7 @@ model Institute {
 model Student {
   id              String    @id @default(uuid()) @db.Uuid
   name            String
-  email           String    @unique
+  email           String    @unique  @db.VarChar(255)
   password        String
   gender          String
   phone_number    String    @unique @map("phone_number")
@@ -47,4 +47,11 @@ model Student {
   updated_at      DateTime  @default(now()) @updatedAt
   code_expires_at DateTime?
   student_id      String    @unique @db.VarChar(10)
+}
+
+model Subscription {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
 }

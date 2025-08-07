@@ -51,15 +51,9 @@ router.patch("/me/:section", instituteAuth, updateProfileSection);
 router.post("/signup", validateEmailDomain, signup);
 router.post("/verify", validateEmailDomain, verifyCode);
 
-router.post(
-  "/resend-verification",
-  validateEmailDomain,
-  resendVerificationCode
-);
+router.post("/resend-verification", resendVerificationCode)
 
 router.post("/auth/login", login);
 router.post("/logout", instituteAuth, logout);
 
 export default router;
-
-

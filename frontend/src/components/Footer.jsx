@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
-    <footer className="w-full bg-[#E6EDE2] px-4 sm:px-6 lg:px-16 py-10 sm:py-14">
+    <footer className="w-full bg-[#f2fffc] border-t border-gray-200 px-4 sm:px-6 lg:px-16 py-10 sm:py-14">
       <div className="flex flex-col lg:flex-row justify-between gap-12">
         {/* Left Section */}
         <div className="w-full lg:w-1/3 flex flex-col items-start -mt-20">
@@ -66,11 +66,9 @@ const Footer = () => {
                 <Link to="/about">About Us</Link>
               </li>
               <li>
-                <Link>Find Coaching</Link>
+                <Link to="/institutes-on-location">Find Coaching</Link>
               </li>
-              <li>
-                <Link>For Institutes</Link>
-              </li>
+              
               <li>
                 <Link to="/review">Write A Review</Link>
               </li>
@@ -86,21 +84,17 @@ const Footer = () => {
               For Students
             </h3>
             <ul className="mt-4 space-y-2  font-medium text-[#000] text-sm sm:text-base">
+              
               <li>
-                <Link>Explore Coaching Institutes</Link>
+                <Link to="/institute-compare">Compare Institutes</Link>
               </li>
-              <li>
-                <Link>Compare Institutes</Link>
-              </li>
-              <li>
+              {/* <li>
                 <Link>Read Student Reviews</Link>
-              </li>
+              </li> */}
               <li>
                 <Link to="/review">Write a Review</Link>
               </li>
-              <li>
-                <Link to="/institutes-on-location">Location-Based Search</Link>
-              </li>
+              
               <li>
                 <Link to="/faq">FAQ</Link>
               </li>
@@ -114,16 +108,10 @@ const Footer = () => {
             </h3>
             <ul className="mt-4 space-y-2  font-medium text-[#000] text-sm sm:text-base">
               <li>
-                <Link>List Your Institute</Link>
+                <Link to="/student-feedback-dashboard">Student Feedback Dashboard</Link>
               </li>
               <li>
-                <Link>Digital Profile Management</Link>
-              </li>
-              <li>
-                <Link>Student Feedback Dashboard</Link>
-              </li>
-              <li>
-                <Link>Support</Link>
+                <Link to="/support">Support</Link>
               </li>
             </ul>
           </div>

@@ -5,6 +5,7 @@ import {
   createStudent,
   findStudentByEmail,
   findStudentByPhone,
+  updateStudentResendVerificationCode,
   verifyStudent,
 } from "../models/studentModel.js";
 import { handleError } from "../utils/errorHandler.js";
@@ -74,8 +75,7 @@ export const signup = [
 
       const student = await createStudent(studentData);
       const token = createSecretToken(student.id, "student");
-      console.log("Signup - Student:", student, "Token:", token);
-      
+      console.log("Signup - Student:", student, "Token:", token); // Debug
 
       res.cookie("authToken", token, {
         httpOnly: true,
@@ -170,6 +170,72 @@ export const verifyCode = [
         500,
         "Server error during email verification",
         "VERIFICATION_ERROR"
+      );
+    }
+  },
+];
+
+// Resend verification code to the student's email
+export const resendVerificationCode = [
+  body("email").isEmail().normalizeEmail().withMessage("Invalid email format"),
+
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return handleError(res, 400, errors.array()[0].msg, "VALIDATION_ERROR");
+    }
+
+    const { email } = req.body;
+
+    try {
+      const student = await findStudentByEmail(email);
+
+      if (!student) {
+        return handleError(res, 404, "Email not found", "EMAIL_NOT_FOUND");
+      }
+
+      if (student.is_verified) {
+        return handleError(
+          res,
+          400,
+          "Email is already verified",
+          "ALREADY_VERIFIED"
+        );
+      }
+
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // valid for 10 mins
+
+      console.log(`[DEBUG] Resent OTP code for ${email}: ${code}`);
+
+      student.code = code;
+      student.code_expires_at = expiresAt;
+
+      // Update code in DB
+      await updateStudentResendVerificationCode(email, code, expiresAt);
+
+      try {
+        await sendVerificationEmail(email, code);
+        return res.status(200).json({
+          status: true,
+          message: "Verification code resent successfully",
+        });
+      } catch (emailErr) {
+        console.error("Email sending failed:", emailErr);
+        return handleError(
+          res,
+          500,
+          "Failed to send email. Try again later.",
+          "EMAIL_SEND_FAILED"
+        );
+      }
+    } catch (err) {
+      console.error("Resend verification error:", err);
+      return handleError(
+        res,
+        500,
+        "Server error during resend verification",
+        "RESEND_ERROR"
       );
     }
   },
@@ -291,55 +357,3 @@ export const logout = async (req, res) => {
     return handleError(res, 500, "Server error during logout", "LOGOUT_ERROR");
   }
 };
-
-// Resend verification code to student's email
-export const resendStudentVerificationCode = [
-  body("email").isEmail().normalizeEmail().withMessage("Invalid email format"),
-
-  async (req, res) => {
-    const errors = validationResult(req);
-    console.log(errors)
-    if (!errors.isEmpty()) {
-      return handleError(res, 400, errors.array()[0].msg, "VALIDATION_ERROR");
-    }
-
-    try {
-      const { email } = req.body;
-      console.log("Resending verification code for student:", email);
-
-      const student = await findStudentByEmail(email);
-      if (!student) {
-        return handleError(res, 404, "Student not found", "STUDENT_NOT_FOUND");
-      }
-
-      if (student.is_verified) {
-        return handleError(res, 400, "Email already verified", "ALREADY_VERIFIED");
-      }
-
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-      await prisma.student.update({
-        where: { email },
-        data: {
-          code,
-          code_expires_at: expiresAt,
-        },
-      });
-
-      try {
-        await sendVerificationEmail(email, code);
-        return res.status(200).json({
-          status: true,
-          message: "Verification code resent to student",
-        });
-      } catch (emailError) {
-        console.error("Error sending email:", emailError);
-        return handleError(res, 500, "Failed to send verification email", "EMAIL_ERROR");
-      }
-    } catch (err) {
-      console.error("Unexpected error:", err);
-      return handleError(res, 500, "Server error", "RESEND_ERROR");
-    }
-  },
-];
