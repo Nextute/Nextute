@@ -38,11 +38,12 @@ import InstitutesList from "./components/InstitutesList "; // Fixed import
 import ErrorBoundary from "./components/ErrorBoundary"; // Add this file
 import SearchPage from "./pages/SearchPage";
 
-
+import ForgotPasswordPopup from "./pages/ForgotPasswordPopup";
+import ResetPassword from "./pages/ResetPassword";
 
 const App = () => {
   // Use correct state names, not setters
-  const { showSignup, showLogin, isAuthenticated } = useContext(AppContext);
+  const { showSignup, showLogin, showForgotPassword } = useContext(AppContext);
 
   return (
     <div className="min-h-screen">
@@ -52,14 +53,7 @@ const App = () => {
           <Route path="/" element={<HomePage />} />
           <Route path="/student/login" element={<StudentLogin />} />
           <Route path="/student/signup" element={<StudentSignup />} />
-          <Route
-            path="/student/dashboard"
-            element={
-            
-                <StudentDashboard />
-              
-            }
-          />
+          <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/about" element={<AboutUsPage />} />
           <Route path="/review" element={<ReviewPage />} />
           <Route path="/faq" element={<FAQPage />} />
@@ -87,17 +81,24 @@ const App = () => {
           <Route path="/institute/facilities" element={<FacilitiesPage />} />
           <Route path="/institute/media" element={<MediaGalleryPage />} />
           <Route path="/institute/social" element={<SocialMediaPage />} />
-          <Route path="/institute/overview/:id" element={<InstituteOverviewPage />} />
-          <Route path="/institute/overview" element={<InstituteOverviewPage />} />
+          <Route
+            path="/institute/overview/:id"
+            element={<InstituteOverviewPage />}
+          />
+          <Route
+            path="/institute/overview"
+            element={<InstituteOverviewPage />}
+          />
           <Route path="/verify" element={<EmailVerificationPage />} />
 
           <Route path="/search" element={<SearchPage />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
         </Routes>
         {showLogin && <LoginPopup />}
         {showSignup && <SignupPopup />}
+        {showForgotPassword && <ForgotPasswordPopup />}
         <Toaster />
       </ErrorBoundary>
-
     </div>
   );
 };

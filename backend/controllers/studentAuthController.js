@@ -9,6 +9,7 @@ import {
 } from "../models/studentModel.js";
 import { handleError } from "../utils/errorHandler.js";
 import { body, validationResult } from "express-validator";
+import prisma from "../db/index.js";
 
 //Singup a new student
 export const signup = [
@@ -290,3 +291,55 @@ export const logout = async (req, res) => {
     return handleError(res, 500, "Server error during logout", "LOGOUT_ERROR");
   }
 };
+
+// Resend verification code to student's email
+export const resendStudentVerificationCode = [
+  body("email").isEmail().normalizeEmail().withMessage("Invalid email format"),
+
+  async (req, res) => {
+    const errors = validationResult(req);
+    console.log(errors)
+    if (!errors.isEmpty()) {
+      return handleError(res, 400, errors.array()[0].msg, "VALIDATION_ERROR");
+    }
+
+    try {
+      const { email } = req.body;
+      console.log("Resending verification code for student:", email);
+
+      const student = await findStudentByEmail(email);
+      if (!student) {
+        return handleError(res, 404, "Student not found", "STUDENT_NOT_FOUND");
+      }
+
+      if (student.is_verified) {
+        return handleError(res, 400, "Email already verified", "ALREADY_VERIFIED");
+      }
+
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      await prisma.Student.update({
+        where: { email },
+        data: {
+          code: code,
+          code_expires_at: expiresAt,
+        },
+      });
+
+      try {
+        await sendVerificationEmail(email, code);
+        return res.status(200).json({
+          status: true,
+          message: "Verification code resent to student",
+        });
+      } catch (emailError) {
+        console.error("Error sending email:", emailError);
+        return handleError(res, 500, "Failed to send verification email", "EMAIL_ERROR");
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      return handleError(res, 500, "Server error", "RESEND_ERROR");
+    }
+  },
+];

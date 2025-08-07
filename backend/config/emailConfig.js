@@ -8,5 +8,5 @@ export default {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-  from: `"Kamlesh Prajapati" <${process.env.EMAIL_USER}>`,
+  from: `"Nextute Admin" <${process.env.EMAIL_USER}>`,
 };

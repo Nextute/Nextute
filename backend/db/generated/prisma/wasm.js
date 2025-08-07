@@ -140,7 +140,9 @@ exports.Prisma.InstituteScalarFieldEnum = {
   code: 'code',
   code_expires_at: 'code_expires_at',
   created_at: 'created_at',
-  updated_at: 'updated_at'
+  updated_at: 'updated_at',
+  password_reset_token: 'password_reset_token',
+  password_reset_expires: 'password_reset_expires'
 };
 
 exports.Prisma.StudentScalarFieldEnum = {
@@ -158,7 +160,16 @@ exports.Prisma.StudentScalarFieldEnum = {
   created_at: 'created_at',
   updated_at: 'updated_at',
   code_expires_at: 'code_expires_at',
-  student_id: 'student_id'
+  student_id: 'student_id',
+  password_reset_token: 'password_reset_token',
+  password_reset_expires: 'password_reset_expires'
+};
+
+exports.Prisma.SubscriptionScalarFieldEnum = {
+  id: 'id',
+  email: 'email',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
 };
 
 exports.Prisma.SortOrder = {
@@ -190,7 +201,8 @@ exports.Prisma.NullsOrder = {
 
 exports.Prisma.ModelName = {
   Institute: 'Institute',
-  Student: 'Student'
+  Student: 'Student',
+  Subscription: 'Subscription'
 };
 
 /**

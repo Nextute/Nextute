@@ -28,23 +28,34 @@ model Institute {
   code                   String?   @db.VarChar(10)
   code_expires_at        DateTime?
   created_at             DateTime  @default(now())
-  updated_at             DateTime  @updatedAt
+  updated_at             DateTime  @default(now()) @updatedAt
+  password_reset_token   String?   @db.VarChar(255)
+  password_reset_expires DateTime?
 }
 
 model Student {
-  id              String    @id @default(uuid()) @db.Uuid
-  name            String
-  email           String    @unique
-  password        String
-  gender          String
-  phone_number    String    @unique @map("phone_number")
-  address         String?
-  course          String?
-  date_of_birth   DateTime  @map("date_of_birth")
-  is_verified     Boolean   @default(false)
-  code            String?
-  created_at      DateTime  @default(now())
-  updated_at      DateTime  @default(now()) @updatedAt
-  code_expires_at DateTime?
-  student_id      String    @unique @db.VarChar(10)
+  id                     String    @id @default(uuid()) @db.Uuid
+  name                   String
+  email                  String    @unique
+  password               String
+  gender                 String
+  phone_number           String    @unique @map("phone_number")
+  address                String?
+  course                 String?
+  date_of_birth          DateTime  @map("date_of_birth")
+  is_verified            Boolean   @default(false)
+  code                   String?
+  created_at             DateTime  @default(now())
+  updated_at             DateTime  @default(now()) @updatedAt
+  code_expires_at        DateTime?
+  student_id             String    @unique @db.VarChar(10)
+  password_reset_token   String?   @db.VarChar(255)
+  password_reset_expires DateTime?
+}
+
+model Subscription {
+  id         String   @id @default(uuid()) @db.Uuid
+  email      String   @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
 }

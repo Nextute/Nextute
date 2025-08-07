@@ -12,6 +12,8 @@ import {
 } from "../models/instituteModel.js";
 import { handleError } from "../utils/errorHandler.js";
 import { body, param, validationResult } from "express-validator";
+import prisma from "../db/index.js";
+import sendUpdateEmail from "../utils/sendUpdateEmail.js";
 
 // Signup a new institute
 export const signup = [
@@ -67,6 +69,22 @@ export const signup = [
       const institute = await createInstitute(instituteData);
       const token = createSecretToken(institute.id, "institute");
       console.log("Signup - Insitute:", institute, "Token:", token); // Debug
+
+      // Check institute count and send update emails if threshold reached
+      try {
+        const instituteCount = await prisma.Institute.count();
+        const THRESHOLD = 100;
+        const isMilestoneReached = instituteCount % THRESHOLD === 0;
+
+        if (isMilestoneReached) {
+          const subscribers = await prisma.Subscription.findMany();
+          await Promise.all(
+            subscribers.map((subscriber) => sendUpdateEmail(subscriber.email))
+          );
+        }
+      } catch (error) {
+        console.error("Error sending update email:", error);
+      }
 
       res.cookie("authToken", token, {
         httpOnly: true,
@@ -204,8 +222,13 @@ export const resendVerificationCode = [
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-      await updateInstituteSection(institute.id, "code", code);
-      await updateInstituteSection(institute.id, "code_expires_at", expiresAt);
+      await prisma.Institute.update({
+        where: { email },
+        data: {
+          code: code,
+          code_expires_at: expiresAt,
+        },
+      });
 
       console.log("DEBUG: Generated new code:", code, "Expires at:", expiresAt);
 
@@ -340,7 +363,6 @@ export const updateProfileSection = [
     if (section === "basic-info") {
       if (!value.institute_name) {
         throw new Error("Institute name is required");
-
       }
     }
 
@@ -496,7 +518,6 @@ export const getAllInstitutesData = async (req, res) => {
   }
 };
 
-
 // Fetch institute by ID
 export const getInstituteById = async (req, res) => {
   try {
@@ -526,4 +547,3 @@ export const getInstituteById = async (req, res) => {
     return handleError(res, 500, "Internal server error", "INSTITUTE_ERROR");
   }
 };
-

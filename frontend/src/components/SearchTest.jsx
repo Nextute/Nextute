@@ -1,6 +1,36 @@
+import { useState, useContext } from "react";
 import { RectangleIcon } from "./RectangleIcon";
+import { AppContext } from "../context/AppContext";
+import axios from "axios";
+import toast from "react-hot-toast";
 
 const SearchTest = () => {
+  const [email, setEmail] = useState("");
+  const { VITE_BACKEND_BASE_URL } = useContext(AppContext);
+
+  const emailValidationRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const handleSubmit = async () => {
+    try {
+      if (!email) {
+        toast.error("Please enter a valid email address.");
+        return;
+      }
+
+      if (!emailValidationRegex.test(email)) {
+        toast.error("Invalid email format.");
+        return;
+      }
+
+      await axios.post(`${VITE_BACKEND_BASE_URL}/api/subscribe`, { email });
+      setEmail("");
+      toast.success("Subscribed successfully!");
+    } catch (error) {
+      toast.error("Subscription failed.");
+      console.error("Subscription error:", error);
+    }
+  };
+
   return (
     <section className="w-full px-4 sm:px-6 lg:px-8 mt-20 mb-12 hidden lg:block">
       {/* Heading */}
@@ -15,12 +45,16 @@ const SearchTest = () => {
         {/* Input Field */}
         <input
           type="text"
-          placeholder="Email Input..."
+          placeholder="Enter your email"
           className="flex-grow w-full outline-none bg-white text-gray-700 placeholder:text-gray-500 placeholder:text-lg py-3 px-4"
+          onChange={(e) => setEmail(e.target.value)}
         />
 
         {/* Subscribe Button with background graphics */}
-        <button className="relative flex items-center justify-center px-6 py-3 rounded-full bg-transparent overflow-visible z-10">
+        <button
+          className="relative flex items-center justify-center px-6 py-3 rounded-full bg-transparent overflow-visible z-10"
+          onClick={handleSubmit}
+        >
           {/* Background Rectangles */}
           <RectangleIcon
             height={220}

@@ -62,6 +62,7 @@ const StudentLogin = () => {
     setUserType,
     setShouldFetchUser,
     setShowLogin,
+    setShowForgotPassword,
   } = useContext(AppContext);
   const navigate = useNavigate();
 
@@ -355,7 +356,7 @@ const StudentLogin = () => {
                 type="button"
                 className="text-[#1F4C56] text-base sm:text-lg font-medium hover:underline"
                 aria-label="Navigate to Forgot Password"
-                onClick={() => navigate("/forgot-password")}
+                onClick={() => setShowForgotPassword(true)}
               >
                 Forgot Password?
               </button>
