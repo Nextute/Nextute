@@ -56,6 +56,8 @@ const Card = ({ institute = defaultInstitute }) => {
       : defaultInstitute.tags,
   };
 
+  console.log("Normalized Institute Data:", normalizedInstitute);
+
   // Function to render stars based on rating
   const renderStars = (rating) => {
     const starCount =

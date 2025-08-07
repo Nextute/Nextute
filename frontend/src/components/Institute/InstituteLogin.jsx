@@ -342,11 +342,7 @@ const InstituteLogin = () => {
               disabled={loading}
               aria-label="Sign In"
             >
-              {loading ? (
-                <LoadingSpinner />
-              ) : (
-                "Sign In"
-              )}
+              {loading ? <LoadingSpinner /> : "Sign In"}
             </button>
 
             <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">

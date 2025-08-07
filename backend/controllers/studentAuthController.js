@@ -10,6 +10,7 @@ import {
 } from "../models/studentModel.js";
 import { handleError } from "../utils/errorHandler.js";
 import { body, validationResult } from "express-validator";
+import prisma from "../db/index.js";
 
 //Singup a new student
 export const signup = [
@@ -74,7 +75,7 @@ export const signup = [
 
       const student = await createStudent(studentData);
       const token = createSecretToken(student.id, "student");
-      console.log("Signup - Student:", student, "Token:", token);
+      console.log("Signup - Student:", student, "Token:", token); // Debug
 
       res.cookie("authToken", token, {
         httpOnly: true,
