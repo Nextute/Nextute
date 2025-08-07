@@ -6,7 +6,7 @@ import Patna from "./Patna.png";
 import Delhi from "./Delhi.png";
 import Mumbai from "./Mumbai.png";
 import Hyderabad from "./Hyderabad.png";
-import More from "./more.png";
+import More from "./More.png";
 import coaching from "./coaching.png";
 import test1 from "./testimonial1.jpg"
 import google from "./google.svg";
