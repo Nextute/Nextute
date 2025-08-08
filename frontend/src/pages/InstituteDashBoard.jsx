@@ -27,6 +27,7 @@ import {
 import LoadingSpinner from "../components/LoadingSpinner.jsx";
 import Navbar from "../components/Navbar.jsx";
 import Footer from "../components/Footer.jsx";
+import { assets } from "../assets/assets.js";
 
 const InstituteDashboard = () => {
   const { instituteDashboardData, dataLoading, error, hasRenderedOnce } =
@@ -68,25 +69,48 @@ const InstituteDashboard = () => {
   }, []);
 
   console.log("instituteDashboardData:", instituteDashboardData);
-  
-  // Parse JSON strings from backend data
-  const instituteData = instituteDashboardData
-    ? {
-        basic_info: JSON.parse(instituteDashboardData.basic_info),
-        contact: instituteDashboardData.contact,
-        email: instituteDashboardData.email,
-        contact_details: JSON.parse(instituteDashboardData.contact_details),
-        courses: JSON.parse(instituteDashboardData.courses),
-        facilities: JSON.parse(instituteDashboardData.facilities),
-        institute_achievements: JSON.parse(
-          instituteDashboardData.institute_achievements
-        ),
-        student_achievements: JSON.parse(
-          instituteDashboardData.student_achievements
-        ),
-        social_media: JSON.parse(instituteDashboardData.social_media),
-      }
-    : null;
+
+  // Utility function to safely parse JSON
+  const safeParseJSON = (jsonString, defaultValue) => {
+    try {
+      return jsonString ? JSON.parse(jsonString) : defaultValue;
+    } catch (e) {
+      console.error("JSON parsing error:", e);
+      return defaultValue;
+    }
+  };
+
+  // Check if instituteDashboardData is valid before parsing
+  const instituteData =
+    instituteDashboardData &&
+    typeof instituteDashboardData === "object" &&
+    !Array.isArray(instituteDashboardData) &&
+    instituteDashboardData.basic_info
+      ? {
+          basic_info: safeParseJSON(instituteDashboardData.basic_info, {}),
+          contact: instituteDashboardData.contact || "",
+          email: instituteDashboardData.email || "",
+          contact_details: safeParseJSON(
+            instituteDashboardData.contact_details,
+            {}
+          ),
+          courses: safeParseJSON(instituteDashboardData.courses, {
+            courses: [],
+          }),
+          facilities: safeParseJSON(instituteDashboardData.facilities, {}),
+          institute_achievements: safeParseJSON(
+            instituteDashboardData.institute_achievements,
+            { achievements: [] }
+          ),
+          student_achievements: safeParseJSON(
+            instituteDashboardData.student_achievements,
+            { achievements: [] }
+          ),
+          social_media: safeParseJSON(instituteDashboardData.social_media, {
+            socialMedia: {},
+          }),
+        }
+      : null;
 
   // Loading and error states
   if (dataLoading || !hasRenderedOnce) {
@@ -96,7 +120,7 @@ const InstituteDashboard = () => {
   if (error || !instituteData) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 text-red-600 text-lg sm:text-xl font-semibold">
-        Error loading data. Please try again.
+        Error loading data or no data available. Please try again.
       </div>
     );
   }
@@ -134,23 +158,23 @@ const InstituteDashboard = () => {
               <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
                 <motion.img
                   whileHover={{ scale: 1.05, rotate: 2 }}
-                  src={instituteData.basic_info.logo}
-                  alt={`${instituteData.basic_info.institute_name} Logo`}
+                  src={instituteData.basic_info.logo || assets.upload_area}
+                  alt={`${
+                    instituteData.basic_info.institute_name || "Institute"
+                  } Logo`}
                   className="w-20 sm:w-24 lg:w-32 rounded-xl object-contain border border-[#2D7A66]/20 shadow-sm"
-                  onError={(e) =>
-                    (e.target.src =
-                      "https://via.placeholder.com/150x50?text=Logo")
-                  }
+                  onError={(e) => (e.target.src = assets.Not_found)}
                 />
                 <div className="text-center sm:text-left">
                   <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#144E53] tracking-tight">
-                    {instituteData.basic_info.institute_name}
+                    {instituteData.basic_info.institute_name || "N/A"}
                   </h1>
                   <p className="text-sm sm:text-base text-[#2D7A66] italic mt-1 sm:mt-2">
-                    {instituteData.basic_info.motto}
+                    {instituteData.basic_info.motto || "N/A"}
                   </p>
                   <p className="text-xs sm:text-sm text-gray-600 mt-1">
-                    Established: {instituteData.basic_info.establishedYear}
+                    Established:{" "}
+                    {instituteData.basic_info.establishedYear || "N/A"}
                   </p>
                 </div>
               </div>
@@ -174,7 +198,10 @@ const InstituteDashboard = () => {
                 ].map((link, index) => (
                   <motion.button
                     key={index}
-                    whileHover={{ scale: 1.05, boxShadow: "0 4px 15px rgba(0, 0, 0, 0.2)" }}
+                    whileHover={{
+                      scale: 1.05,
+                      boxShadow: "0 4px 15px rgba(0, 0, 0, 0.2)",
+                    }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => navigate(link.link)}
                     className="px-3 py-2 sm:px-4 sm:py-2 bg-gradient-to-r from-[#2D7A66] to-[#144E53] text-white rounded-lg shadow-md hover:from-[#144E53] hover:to-[#2D7A66] transition-all duration-300 flex items-center gap-2 text-xs sm:text-sm"
@@ -198,25 +225,36 @@ const InstituteDashboard = () => {
             {[
               {
                 title: "Courses Offered",
-                value: instituteData.courses.courses.length,
-                icon: <FaSchool className="text-[#2D7A66] w-6 sm:w-8 h-6 sm:h-8" />,
+                value: instituteData.courses.courses?.length || 0,
+                icon: (
+                  <FaSchool className="text-[#2D7A66] w-6 sm:w-8 h-6 sm:h-8" />
+                ),
               },
               {
                 title: "Facilities",
                 value: Object.values(instituteData.facilities).filter(
                   (v) => v === "Yes" || (typeof v === "string" && v.trim())
                 ).length,
-                icon: <FaBuilding className="text-[#2D7A66] w-6 sm:w-8 h-6 sm:h-8" />,
+                icon: (
+                  <FaBuilding className="text-[#2D7A66] w-6 sm:w-8 h-6 sm:h-8" />
+                ),
               },
               {
                 title: "Institute Achievements",
-                value: instituteData.institute_achievements.achievements.length,
-                icon: <FaTrophy className="text-[#2D7A66] w-6 sm:w-8 h-6 sm:h-8" />,
+                value:
+                  instituteData.institute_achievements.achievements?.length ||
+                  0,
+                icon: (
+                  <FaTrophy className="text-[#2D7A66] w-6 sm:w-8 h-6 sm:h-8" />
+                ),
               },
               {
                 title: "Student Achievements",
-                value: instituteData.student_achievements.achievements.length,
-                icon: <FaTrophy className="text-[#2D7A66] w-6 sm:w-8 h-6 sm:h-8" />,
+                value:
+                  instituteData.student_achievements.achievements?.length || 0,
+                icon: (
+                  <FaTrophy className="text-[#2D7A66] w-6 sm:w-8 h-6 sm:h-8" />
+                ),
               },
             ].map((card, index) => (
               <SummaryCard
@@ -244,7 +282,8 @@ const InstituteDashboard = () => {
                   Description
                 </h3>
                 <p className="text-gray-700 text-sm sm:text-base leading-relaxed">
-                  {instituteData.basic_info.description}
+                  {instituteData.basic_info.description ||
+                    "No description available"}
                 </p>
               </div>
               <div>
@@ -252,13 +291,13 @@ const InstituteDashboard = () => {
                   Exams Covered
                 </h3>
                 <p className="text-gray-700 text-sm sm:text-base">
-                  {instituteData.basic_info.exams.join(", ")}
+                  {instituteData.basic_info.exams?.join(", ") || "N/A"}
                 </p>
                 <h3 className="text-base sm:text-lg font-semibold text-[#2D7A66] mt-4 mb-2">
                   Medium
                 </h3>
                 <p className="text-gray-700 text-sm sm:text-base capitalize">
-                  {instituteData.basic_info.medium}
+                  {instituteData.basic_info.medium || "N/A"}
                 </p>
               </div>
               <div>
@@ -270,19 +309,21 @@ const InstituteDashboard = () => {
                   <span
                     className="cursor-pointer hover:text-[#144E53] transition-colors duration-200"
                     onClick={() =>
-                      handleCopy(instituteData.contact, "Phone Number")
+                      handleCopy(instituteData.contact || "N/A", "Phone Number")
                     }
                   >
-                    {instituteData.contact}
+                    {instituteData.contact || "N/A"}
                   </span>
                 </p>
                 <p className="text-gray-700 text-sm sm:text-base flex items-center gap-2 mt-2">
                   <FaEnvelope className="text-[#2D7A66] w-4 sm:w-5 h-4 sm:h-5" />
                   <span
                     className="cursor-pointer hover:text-[#144E53] transition-colors duration-200"
-                    onClick={() => handleCopy(instituteData.email, "Email")}
+                    onClick={() =>
+                      handleCopy(instituteData.email || "N/A", "Email")
+                    }
                   >
-                    {instituteData.email}
+                    {instituteData.email || "N/A"}
                   </span>
                 </p>
               </div>
@@ -292,11 +333,33 @@ const InstituteDashboard = () => {
                 </h3>
                 <p className="text-gray-700 text-sm sm:text-base">
                   <strong>Branch:</strong>{" "}
-                  {`${instituteData.contact_details.branch.address}, ${instituteData.contact_details.branch.city}, ${instituteData.contact_details.branch.state} - ${instituteData.contact_details.branch.pinCode}`}
+                  {instituteData.contact_details.branch
+                    ? `${
+                        instituteData.contact_details.branch.address || "N/A"
+                      }, ${
+                        instituteData.contact_details.branch.city || "N/A"
+                      }, ${
+                        instituteData.contact_details.branch.state || "N/A"
+                      } - ${
+                        instituteData.contact_details.branch.pinCode || "N/A"
+                      }`
+                    : "N/A"}
                 </p>
                 <p className="text-gray-700 text-sm sm:text-base mt-2">
                   <strong>Head Office:</strong>{" "}
-                  {`${instituteData.contact_details.headOffice.address}, ${instituteData.contact_details.headOffice.city}, ${instituteData.contact_details.headOffice.state} - ${instituteData.contact_details.headOffice.pinCode}`}
+                  {instituteData.contact_details.headOffice
+                    ? `${
+                        instituteData.contact_details.headOffice.address ||
+                        "N/A"
+                      }, ${
+                        instituteData.contact_details.headOffice.city || "N/A"
+                      }, ${
+                        instituteData.contact_details.headOffice.state || "N/A"
+                      } - ${
+                        instituteData.contact_details.headOffice.pinCode ||
+                        "N/A"
+                      }`
+                    : "N/A"}
                 </p>
               </div>
             </div>
@@ -314,7 +377,10 @@ const InstituteDashboard = () => {
                 Facilities
               </h2>
               <motion.button
-                whileHover={{ scale: 1.05, boxShadow: "0 4px 15px rgba(0, 0, 0, 0.2)" }}
+                whileHover={{
+                  scale: 1.05,
+                  boxShadow: "0 4px 15px rgba(0, 0, 0, 0.2)",
+                }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => navigate("/institute/edit-facilities")}
                 className="px-3 py-2 sm:px-4 sm:py-2 bg-gradient-to-r from-[#2D7A66] to-[#144E53] text-white rounded-lg shadow-md hover:from-[#144E53] hover:to-[#2D7A66] transition-all duration-300 flex items-center gap-2 text-xs sm:text-sm"
@@ -340,65 +406,87 @@ const InstituteDashboard = () => {
               {[
                 {
                   label: "Library",
-                  value: instituteData.facilities.library,
-                  icon: <FaBook className="text-[#2D7A66] w-5 sm:w-6 h-5 sm:h-6" />,
+                  value: instituteData.facilities.library || "No",
+                  icon: (
+                    <FaBook className="text-[#2D7A66] w-5 sm:w-6 h-5 sm:h-6" />
+                  ),
                 },
                 {
                   label: "Mentorship Program",
-                  value: instituteData.facilities.mentorship,
+                  value: instituteData.facilities.mentorship || "No",
                   icon: (
                     <FaChalkboardTeacher className="text-[#2D7A66] w-5 sm:w-6 h-5 sm:h-6" />
                   ),
                 },
                 {
                   label: "Tutorial & Remedial Classes",
-                  value: instituteData.facilities.tutorial,
-                  icon: <FaChalkboard className="text-[#2D7A66] w-5 sm:w-6 h-5 sm:h-6" />,
+                  value: instituteData.facilities.tutorial || "No",
+                  icon: (
+                    <FaChalkboard className="text-[#2D7A66] w-5 sm:w-6 h-5 sm:h-6" />
+                  ),
                 },
                 {
                   label: "Hostel Accommodation",
-                  value: instituteData.facilities.hostel,
-                  icon: <FaBuilding className="text-[#2D7A66] w-5 sm:w-6 h-5 sm:h-6" />,
+                  value: instituteData.facilities.hostel || "No",
+                  icon: (
+                    <FaBuilding className="text-[#2D7A66] w-5 sm:w-6 h-5 sm:h-6" />
+                  ),
                 },
                 {
                   label: "Test Series",
-                  value: instituteData.facilities.testSeries,
-                  icon: <FaClipboardCheck className="text-[#2D7A66] w-5 sm:w-6 h-5 sm:h-6" />,
+                  value: instituteData.facilities.testSeries || "No",
+                  icon: (
+                    <FaClipboardCheck className="text-[#2D7A66] w-5 sm:w-6 h-5 sm:h-6" />
+                  ),
                 },
                 {
                   label: "Online Learning Portal",
-                  value: instituteData.facilities.onlinePortal,
-                  icon: <FaLaptop className="text-[#2D7A66] w-5 sm:w-6 h-5 sm:h-6" />,
+                  value: instituteData.facilities.onlinePortal || "No",
+                  icon: (
+                    <FaLaptop className="text-[#2D7A66] w-5 sm:w-6 h-5 sm:h-6" />
+                  ),
                 },
                 {
                   label: "Study Material",
-                  value: instituteData.facilities.studyMaterials,
-                  icon: <FaBook className="text-[#2D7A66] w-5 sm:w-6 h-5 sm:h-6" />,
+                  value: instituteData.facilities.studyMaterials || "No",
+                  icon: (
+                    <FaBook className="text-[#2D7A66] w-5 sm:w-6 h-5 sm:h-6" />
+                  ),
                 },
                 {
                   label: "Attendance Tracking",
-                  value: instituteData.facilities.attendance,
-                  icon: <FaClipboardCheck className="text-[#2D7A66] w-5 sm:w-6 h-5 sm:h-6" />,
+                  value: instituteData.facilities.attendance || "No",
+                  icon: (
+                    <FaClipboardCheck className="text-[#2D7A66] w-5 sm:w-6 h-5 sm:h-6" />
+                  ),
                 },
                 {
                   label: "Well-Equipped Classes",
-                  value: instituteData.facilities.classes,
-                  icon: <FaSchool className="text-[#2D7A66] w-5 sm:w-6 h-5 sm:h-6" />,
+                  value: instituteData.facilities.classes || "No",
+                  icon: (
+                    <FaSchool className="text-[#2D7A66] w-5 sm:w-6 h-5 sm:h-6" />
+                  ),
                 },
                 {
                   label: "CCTV Surveillance",
-                  value: instituteData.facilities.cctv,
-                  icon: <FaVideo className="text-[#2D7A66] w-5 sm:w-6 h-5 sm:h-6" />,
+                  value: instituteData.facilities.cctv || "No",
+                  icon: (
+                    <FaVideo className="text-[#2D7A66] w-5 sm:w-6 h-5 sm:h-6" />
+                  ),
                 },
                 {
                   label: "Medical Facilities",
-                  value: instituteData.facilities.medical,
-                  icon: <FaHospital className="text-[#2D7A66] w-5 sm:w-6 h-5 sm:h-6" />,
+                  value: instituteData.facilities.medical || "No",
+                  icon: (
+                    <FaHospital className="text-[#2D7A66] w-5 sm:w-6 h-5 sm:h-6" />
+                  ),
                 },
                 {
                   label: "Other Facilities",
-                  value: instituteData.facilities.other,
-                  icon: <FaLink className="text-[#2D7A66] w-5 sm:w-6 h-5 sm:h-6" />,
+                  value: instituteData.facilities.other || "None",
+                  icon: (
+                    <FaLink className="text-[#2D7A66] w-5 sm:w-6 h-5 sm:h-6" />
+                  ),
                 },
               ].map((facility, index) => (
                 <motion.div
@@ -408,7 +496,8 @@ const InstituteDashboard = () => {
                   transition={{ duration: 0.3, delay: index * 0.1 }}
                   className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg border shadow-sm transition-all duration-300 ${
                     facility.value === "Yes" ||
-                    (facility.label === "Other Facilities" && facility.value)
+                    (facility.label === "Other Facilities" &&
+                      facility.value !== "None")
                       ? "bg-[#E6EDE2] border-[#2D7A66]"
                       : "bg-gray-50 border-gray-200"
                   } hover:shadow-lg hover:scale-[1.02]`}
@@ -422,12 +511,12 @@ const InstituteDashboard = () => {
                       className={`text-xs sm:text-sm font-medium ${
                         facility.value === "Yes"
                           ? "text-green-600"
-                          : facility.value === "No"
+                          : facility.value === "No" || facility.value === "None"
                           ? "text-red-600"
                           : "text-gray-950"
                       }`}
                     >
-                      {facility.value || "No"}
+                      {facility.value}
                     </p>
                   </div>
                 </motion.div>
@@ -448,9 +537,14 @@ const InstituteDashboard = () => {
                   Institute Achievements
                 </h2>
                 <motion.button
-                  whileHover={{ scale: 1.05, boxShadow: "0 4px 15px rgba(0, 0, 0, 0.2)" }}
+                  whileHover={{
+                    scale: 1.05,
+                    boxShadow: "0 4px 15px rgba(0, 0, 0, 0.2)",
+                  }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => navigate("/institute/edit-achievements/institute")}
+                  onClick={() =>
+                    navigate("/institute/edit-achievements/institute")
+                  }
                   className="px-3 py-2 sm:px-4 sm:py-2 bg-gradient-to-r from-[#2D7A66] to-[#144E53] text-white rounded-lg shadow-md hover:from-[#144E53] hover:to-[#2D7A66] transition-all duration-300 flex items-center gap-2 text-xs sm:text-sm"
                   aria-label="Edit Institute Achievements"
                 >
@@ -471,7 +565,8 @@ const InstituteDashboard = () => {
                 </motion.button>
               </div>
               <div className="max-h-[300px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#2D7A66] scrollbar-track-gray-100">
-                {instituteData.institute_achievements.achievements.length > 0 ? (
+                {instituteData.institute_achievements.achievements?.length >
+                0 ? (
                   instituteData.institute_achievements.achievements.map(
                     (achievement, index) => (
                       <AchievementCard
@@ -493,9 +588,14 @@ const InstituteDashboard = () => {
                   Student Achievements
                 </h2>
                 <motion.button
-                  whileHover={{ scale: 1.05, boxShadow: "0 4px 15px rgba(0, 0, 0, 0.2)" }}
+                  whileHover={{
+                    scale: 1.05,
+                    boxShadow: "0 4px 15px rgba(0, 0, 0, 0.2)",
+                  }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => navigate("/institute/edit-achievements/student")}
+                  onClick={() =>
+                    navigate("/institute/edit-achievements/student")
+                  }
                   className="px-3 py-2 sm:px-4 sm:py-2 bg-gradient-to-r from-[#2D7A66] to-[#144E53] text-white rounded-lg shadow-md hover:from-[#144E53] hover:to-[#2D7A66] transition-all duration-300 flex items-center gap-2 text-xs sm:text-sm"
                   aria-label="Edit Student Achievements"
                 >
@@ -516,7 +616,7 @@ const InstituteDashboard = () => {
                 </motion.button>
               </div>
               <div className="max-h-[300px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#2D7A66] scrollbar-track-gray-100">
-                {instituteData.student_achievements.achievements.length > 0 ? (
+                {instituteData.student_achievements.achievements?.length > 0 ? (
                   instituteData.student_achievements.achievements.map(
                     (achievement) => (
                       <AchievementCard
@@ -546,7 +646,10 @@ const InstituteDashboard = () => {
                 Follow Us
               </h2>
               <motion.button
-                whileHover={{ scale: 1.05, boxShadow: "0 4px 15px rgba(0, 0, 0, 0.2)" }}
+                whileHover={{
+                  scale: 1.05,
+                  boxShadow: "0 4px 15px rgba(0, 0, 0, 0.2)",
+                }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => navigate("/institute/edit-social-media")}
                 className="px-3 py-2 sm:px-4 sm:py-2 bg-gradient-to-r from-[#2D7A66] to-[#144E53] text-white rounded-lg shadow-md hover:from-[#144E53] hover:to-[#2D7A66] transition-all duration-300 flex items-center gap-2 text-xs sm:text-sm"
@@ -572,28 +675,28 @@ const InstituteDashboard = () => {
               {[
                 {
                   platform: "facebook",
-                  url: instituteData.social_media.socialMedia.facebook,
+                  url: instituteData.social_media.socialMedia?.facebook || "",
                 },
                 {
                   platform: "twitter",
-                  url: instituteData.social_media.socialMedia.twitter,
+                  url: instituteData.social_media.socialMedia?.twitter || "",
                 },
                 {
                   platform: "instagram",
-                  url: instituteData.social_media.socialMedia.instagram,
+                  url: instituteData.social_media.socialMedia?.instagram || "",
                 },
                 {
                   platform: "linkedin",
-                  url: instituteData.social_media.socialMedia.linkedin,
+                  url: instituteData.social_media.socialMedia?.linkedin || "",
                 },
                 {
                   platform: "youtube",
-                  url: instituteData.social_media.socialMedia.youtube,
+                  url: instituteData.social_media.socialMedia?.youtube || "",
                 },
-                ...(instituteData.social_media.socialMedia.other || []).map(
+                ...(instituteData.social_media.socialMedia?.other || []).map(
                   (other, index) => ({
-                    platform: other.label.toLowerCase(),
-                    url: other.link,
+                    platform: other.label?.toLowerCase() || `other-${index}`,
+                    url: other.link || "",
                     key: `other-${index}`,
                   })
                 ),
