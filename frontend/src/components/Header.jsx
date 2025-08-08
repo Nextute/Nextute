@@ -11,7 +11,7 @@ const Header = () => {
   const [loopNum, setLoopNum] = useState(0);
   const [typingSpeed, setTypingSpeed] = useState(150);
 
-  const phrases = ["100+ Cities", "100+ Institutes", "10000+ Students"];
+  const phrases = ["100+ Cities", "1000+ Institutes", "10000+ Students"];
   const navigate = useNavigate();
 
   // Typewriter effect logic
