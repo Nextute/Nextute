@@ -11,7 +11,7 @@ const Header = () => {
   const [loopNum, setLoopNum] = useState(0);
   const [typingSpeed, setTypingSpeed] = useState(150);
 
-  const phrases = ["10+ Cities", "100+ Institutes", "1000+ Courses"];
+  const phrases = ["100+ Cities", "100+ Institutes", "10000+ Students"];
   const navigate = useNavigate();
 
   // Typewriter effect logic
@@ -66,7 +66,7 @@ const Header = () => {
         >
           Search Across{" "}
           <span className="relative inline-block text-[#204B55] ml-2">
-            <span className="invisible">"1000+ Courses"</span>
+            <span className="invisible">"100+ Cities"</span>
             <span className="absolute left-0 top-0 whitespace-nowrap">
               "{text}"
             </span>
